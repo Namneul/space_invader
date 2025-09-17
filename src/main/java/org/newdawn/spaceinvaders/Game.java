@@ -72,7 +72,7 @@ public class Game extends Canvas
 	/** The current number of frames recorded */
 	private int fps;
 	/** The normal title of the game window */
-	private String windowTitle = "소공 최강의 스.인";
+	private String windowTitle = "Space Invaders 102";
 	/** The game window that we'll update with the frame count */
 	private JFrame container;
 	
