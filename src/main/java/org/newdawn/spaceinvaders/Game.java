@@ -170,7 +170,7 @@ public class Game extends Canvas
 	}
 
 	public void alienFires(Entity alien) {
-		AlienShotEntity shot = new AlienShotEntity(this, "sprites/shot.gif", alien.getX(), alien.getY() + 20);
+		AlienShotEntity shot = new AlienShotEntity(this, "sprites/alienshot.png", alien.getX(), alien.getY() + 20);
 		entities.add(shot);
 	}
 
