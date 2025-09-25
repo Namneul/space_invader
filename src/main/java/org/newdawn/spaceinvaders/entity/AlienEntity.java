@@ -68,6 +68,10 @@ public class AlienEntity extends Entity {
 			
 			sprite = frames[frameNumber];
 		}
+
+		if (Math.random() < 0.001) {
+			game.alienFires(this);
+		}
 		
 		// if we have reached the left hand side of the screen and
 		// are moving left then request a logic update 
