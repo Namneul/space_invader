@@ -13,8 +13,9 @@ import java.awt.Image;
  * @author Kevin Glass
  */
 public class Sprite {
+	private final Image image;
 	/** The image to be drawn for this sprite */
-	private Image image;
+	private Image Simage;
 	
 	/**
 	 * Create a new sprite based on an image
