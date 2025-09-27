@@ -1,9 +1,6 @@
 package org.newdawn.spaceinvaders;
 
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -11,8 +8,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
 import java.util.ArrayList;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import org.newdawn.spaceinvaders.entity.AlienEntity;
 import org.newdawn.spaceinvaders.entity.Entity;
@@ -75,32 +71,40 @@ public class Game extends Canvas
 	private String windowTitle = "Space Invaders 102";
 	/** The game window that we'll update with the frame count */
 	private JFrame container;
-	
+	private JPanel gamePanel;
 	/**
 	 * Construct our game and set it running.
 	 */
+
+	LoginFrame loginFrame = new LoginFrame();
+
+
+	private Image mainImage;
+
 	public Game() {
 		// create a frame to contain our game
 		container = new JFrame("Space Invaders 102");
-		
+
+
+
 		// get hold the content of the frame and set up the resolution of the game
-		JPanel panel = (JPanel) container.getContentPane();
-		panel.setPreferredSize(new Dimension(800,600));
-		panel.setLayout(null);
-		
+		gamePanel = (JPanel) container.getContentPane();
+		gamePanel.setPreferredSize(new Dimension(800,600));
+		gamePanel.setLayout(null);
+
 		// setup our canvas size and put it into the content of the frame
 		setBounds(0,0,800,600);
-		panel.add(this);
-		
+		gamePanel.add(this);
+
 		// Tell AWT not to bother repainting our canvas since we're
 		// going to do that our self in accelerated mode
 		setIgnoreRepaint(true);
-		
-		// finally make the window visible 
+
+		// finally make the window visible
 		container.pack();
 		container.setResizable(false);
 		container.setVisible(true);
-		
+
 		// add a listener to respond to the user closing the window. If they
 		// do we'd like to exit the game
 		container.addWindowListener(new WindowAdapter() {
@@ -108,19 +112,21 @@ public class Game extends Canvas
 				System.exit(0);
 			}
 		});
-		
+
 		// add a key input system (defined below) to our canvas
 		// so we can respond to key pressed
 		addKeyListener(new KeyInputHandler());
-		
+
 		// request the focus so key events come to us
 		requestFocus();
 
 		// create the buffering strategy which will allow AWT
 		// to manage our accelerated graphics
-		createBufferStrategy(2);
-		strategy = getBufferStrategy();
-		
+//		createBufferStrategy(2);
+//		strategy = getBufferStrategy();
+		//메인 화면 생성으로 인한 패널 전환으로 새로운 메소드로 분리
+
+
 		// initialise the entities in our game so there's something
 		// to see at startup
 		initEntities();
@@ -186,6 +192,9 @@ public class Game extends Canvas
 	public void notifyDeath() {
 		message = "Oh no! They got you, try again?";
 		waitingForKeyPress = true;
+		if (waitingForKeyPress) {
+
+		}
 	}
 	
 	/**
@@ -248,9 +257,13 @@ public class Game extends Canvas
 	 * - Checking Input
 	 * <p>
 	 */
+
 	public void gameLoop() {
 		long lastLoopTime = SystemTimer.getTime();
-		
+		JFrame frame = new JFrame("Space Invaders");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+
 		// keep looping round til the game ends
 		while (gameRunning) {
 			// work out how long its been since the last update, this
@@ -323,11 +336,14 @@ public class Game extends Canvas
 				
 				logicRequiredThisLoop = false;
 			}
-			
+
+
 			// if we're waiting for an "any key" press then draw the 
 			// current message 
 			if (waitingForKeyPress) {
 				g.setColor(Color.white);
+
+
 				g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
 				g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
 			}
@@ -360,7 +376,7 @@ public class Game extends Canvas
 			SystemTimer.sleep(lastLoopTime+10-SystemTimer.getTime());
 		}
 	}
-	
+
 	/**
 	 * A class to handle keyboard input from the user. The class
 	 * handles both dynamic input during game play, i.e. left/right 
@@ -457,20 +473,72 @@ public class Game extends Canvas
 			}
 		}
 	}
-	
+
+
+	public void mainMenu() {
+		JFrame frame = container;
+		JPanel panel = new JPanel(){
+			public void paintComponent(Graphics g) {
+				mainImage = new ImageIcon("/Users/hwiseo/Documents/2025_2Y2S/sourceCode/space_invader/src/main/resources/mainBackground.png").getImage();
+				super.paintComponent(g);
+				g.drawImage(mainImage, 0, 0,800,600, null);
+			}
+		};
+		panel.setPreferredSize(new Dimension(800, 600));
+		panel.setLayout(null);
+
+		ButtonController buttonController = new ButtonController();
+
+		//버튼 생성
+		JButton[] menuButtons = {new JButton("startGame"),
+				new JButton("login"),
+				new JButton("Rank"),
+				new JButton("OnLine"),
+				new JButton("exit")};
+
+		for(int i=0;i<menuButtons.length;i++) {
+			panel.add(menuButtons[i]);
+		}
+		menuButtons[0].setBounds(300,335,200,50);
+		menuButtons[1].setBounds(300,395,200,50);
+		menuButtons[2].setBounds(300,455,200,50);
+		menuButtons[3].setBounds(300,515,200,50);
+		//메인화면 패널로 전환
+		frame.setContentPane(panel);
+		frame.revalidate();
+		frame.repaint();
+
+		menuButtons[0].addActionListener(e -> {
+			frame.setContentPane(gamePanel);
+			frame.revalidate();
+			frame.repaint();
+			requestFocus();
+
+			createBufferStrategy(2);
+			strategy = getBufferStrategy();
+
+			new Thread(() -> {gameLoop();}).start();
+		});
+
+		menuButtons[1].addActionListener(e -> {
+			buttonController.pressLoginBtn(loginFrame,panel,frame);
+		});
+
+	}
+
 	/**
 	 * The entry point into the game. We'll simply create an
 	 * instance of class which will start the display and game
 	 * loop.
-	 * 
+	 *
 	 * @param argv The arguments that are passed into our game
 	 */
 	public static void main(String argv[]) {
-		Game g = new Game();
-
+		Game game = new Game();
+		game.mainMenu();
 		// Start the main game loop, note: this method will not
 		// return until the game has finished running. Hence we are
 		// using the actual main thread to run the game.
-		g.gameLoop();
+
 	}
 }
