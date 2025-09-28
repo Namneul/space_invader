@@ -47,7 +47,12 @@ public abstract class Entity {
 		this.x = x;
 		this.y = y;
 	}
-	
+
+	public void setPosition(int x, int y) {
+		this.x = x;
+		this.y = y;
+	}
+
 	/**
 	 * Request that this entity move itself based on a certain ammount
 	 * of time passing.
@@ -71,7 +76,7 @@ public abstract class Entity {
 
 	/**
 	 * Set the vertical speed of this entity
-	 *
+	 * 
 	 * @param dy The vertical speed of this entity (pixels/sec)
 	 */
 	public void setVerticalMovement(double dy) {

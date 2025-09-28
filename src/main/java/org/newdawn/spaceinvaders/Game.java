@@ -14,6 +14,7 @@ import org.newdawn.spaceinvaders.entity.AlienEntity;
 import org.newdawn.spaceinvaders.entity.Entity;
 import org.newdawn.spaceinvaders.entity.ShipEntity;
 import org.newdawn.spaceinvaders.entity.ShotEntity;
+import org.newdawn.spaceinvaders.entity.AlienShotEntity;
 
 /**
  * The main hook of our game. This class with both act as a manager
@@ -72,6 +73,12 @@ public class Game extends Canvas
 	/** The game window that we'll update with the frame count */
 	private JFrame container;
 	private JPanel gamePanel;
+
+	private int playerLives;
+	private Sprite redHeartSprite;
+	private Sprite greyHeartSprite;
+	private final int MAX_LIVES = 3;
+
 	/**
 	 * Construct our game and set it running.
 	 */
@@ -130,6 +137,8 @@ public class Game extends Canvas
 		// initialise the entities in our game so there's something
 		// to see at startup
 		initEntities();
+		redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
+		greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
 	}
 	
 	/**
@@ -155,7 +164,8 @@ public class Game extends Canvas
 		// create the player ship and place it roughly in the center of the screen
 		ship = new ShipEntity(this,"sprites/ship.gif",370,550);
 		entities.add(ship);
-		
+		playerLives = MAX_LIVES;
+
 		// create a block of aliens (5 rows, by 12 aliens, spaced evenly)
 		alienCount = 0;
 		for (int row=0;row<3;row++) {
@@ -166,7 +176,12 @@ public class Game extends Canvas
 			}
 		}
 	}
-	
+
+	public void alienFires(Entity alien) {
+		AlienShotEntity shot = new AlienShotEntity(this, "sprites/alienshot.png", alien.getX(), alien.getY() + 20);
+		entities.add(shot);
+	}
+
 	/**
 	 * Notification from a game entity that the logic of the game
 	 * should be run at the next opportunity (normally as a result of some
@@ -190,10 +205,14 @@ public class Game extends Canvas
 	 * Notification that the player has died. 
 	 */
 	public void notifyDeath() {
-		message = "Oh no! They got you, try again?";
-		waitingForKeyPress = true;
-		if (waitingForKeyPress) {
+		playerLives--;
 
+		if (playerLives <= 0) {
+			message = "Oh no! They got you, try again?";
+			removeEntity(ship);
+			waitingForKeyPress = true;
+		} else {
+			ship.setPosition(370, 550);
 		}
 	}
 	
@@ -320,7 +339,11 @@ public class Game extends Canvas
 					}
 				}
 			}
-			
+
+			for (int i = 0; i < MAX_LIVES; i++) {
+				Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
+				heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
+			}
 			// remove any entity that has been marked for clear up
 			entities.removeAll(removeList);
 			removeList.clear();
