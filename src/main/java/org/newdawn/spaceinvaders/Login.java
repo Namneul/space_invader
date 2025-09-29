@@ -72,9 +72,43 @@ public class Login {
         }
     }
 
+    public int getScore(String username) {
+        String sql = "select Score from ScoreBoard where UserId=?";
+        try{
+            psmt = con.prepareStatement(sql);
+            psmt.setString(1,username);
+            psmt.executeUpdate();
+            ResultSet rs = psmt.getResultSet();
+            rs.next();
+            System.out.println("getScore successf");
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            System.out.println("Failed to get score "+ e.getMessage());
+            return 1;
+        }
+    }
 
-    public static void main(String[] args) {
-        Login login = new Login();
-        login.signUp("admin","1234");
+    public void insertScore(String username, int score) {
+        String sql = "insert into ScoreBoard values(?,?)";
+        try{
+            psmt = con.prepareStatement(sql);
+            psmt.setString(1,username);
+            psmt.setInt(2,score);
+            psmt.executeUpdate();
+            System.out.println("successfully inserted score");
+        }catch(SQLException e){
+            System.out.println("Failed to insert score"+ e.getMessage());
+        }
+    }
+
+    public ResultSet getAllScore() {
+        String sql = "select * from ScoreBoard";
+        try{
+            psmt = con.prepareStatement(sql);
+            ResultSet rs = psmt.executeQuery();
+            return rs;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

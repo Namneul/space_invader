@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.sql.SQLException;
 
 public class ButtonController {
     public void pressLoginBtn(LoginFrame loginFrame,JPanel panel, JFrame frame) {
@@ -28,5 +29,9 @@ public class ButtonController {
                 }
             });
         }
+    }
+
+    public void pressRankBtn(LoginFrame loginFrame) throws SQLException {
+        RankBoard rb = new RankBoard(loginFrame.login.getAllScore());
     }
 }
