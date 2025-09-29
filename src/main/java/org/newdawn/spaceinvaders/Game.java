@@ -69,7 +69,7 @@ public class Game extends Canvas
 	/** The current number of frames recorded */
 	private int fps;
 	/** The normal title of the game window */
-	private String windowTitle = "Space Invaders 102";
+	private String windowTitle = "Space Invaders";
 	/** The game window that we'll update with the frame count */
 	private JFrame container;
 	private JPanel gamePanel;
@@ -77,6 +77,7 @@ public class Game extends Canvas
 	private int playerLives;
 	private Sprite redHeartSprite;
 	private Sprite greyHeartSprite;
+	private Sprite mainBackground;
 	private final int MAX_LIVES = 3;
 
 	/**
@@ -90,7 +91,7 @@ public class Game extends Canvas
 
 	public Game() {
 		// create a frame to contain our game
-		container = new JFrame("Space Invaders 102");
+		container = new JFrame("Space Invaders");
 
 
 
@@ -139,6 +140,7 @@ public class Game extends Canvas
 		initEntities();
 		redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
 		greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
+		mainBackground = SpriteStore.get().getSprite("mainBackground.png");
 	}
 	
 	/**
@@ -501,10 +503,10 @@ public class Game extends Canvas
 	public void mainMenu() {
 		JFrame frame = container;
 		JPanel panel = new JPanel(){
-			public void paintComponent(Graphics g) {
-				mainImage = new ImageIcon("/Users/hwiseo/Documents/2025_2Y2S/sourceCode/space_invader/src/main/resources/mainBackground.png").getImage();
+			@Override
+			protected void paintComponent(Graphics g) {
 				super.paintComponent(g);
-				g.drawImage(mainImage, 0, 0,800,600, null);
+				mainBackground.draw(g, 0, 0);
 			}
 		};
 		panel.setPreferredSize(new Dimension(800, 600));
