@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import javax.swing.*;
@@ -211,6 +212,7 @@ public class Game extends Canvas
 
 		if (playerLives <= 0) {
 			message = "Oh no! They got you, try again?";
+			loginFrame.user.compareScore(loginFrame);
 			removeEntity(ship);
 			waitingForKeyPress = true;
 		} else {
@@ -233,8 +235,9 @@ public class Game extends Canvas
 	public void notifyAlienKilled() {
 		// reduce the alient count, if there are none left, the player has won!
 		alienCount--;
-		
+		loginFrame.user.increaseScore();
 		if (alienCount == 0) {
+			loginFrame.user.compareScore(loginFrame);
 			notifyWin();
 		}
 		
@@ -310,6 +313,10 @@ public class Game extends Canvas
 			Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 			g.setColor(Color.black);
 			g.fillRect(0,0,800,600); // 배경 색
+
+			g.setColor(Color.WHITE);
+			g.setFont(new Font("Serif", Font.BOLD, 20));
+			g.drawString("Score: " + loginFrame.user.Score, 650, 580);
 			
 			// cycle round asking each entity to move itself
 			if (!waitingForKeyPress) {
@@ -547,6 +554,14 @@ public class Game extends Canvas
 
 		menuButtons[1].addActionListener(e -> {
 			buttonController.pressLoginBtn(loginFrame,panel,frame);
+		});
+
+		menuButtons[2].addActionListener(e -> {
+			try{
+				buttonController.pressRankBtn(loginFrame);
+			}catch(SQLException ex){
+				ex.printStackTrace();
+			}
 		});
 
 	}

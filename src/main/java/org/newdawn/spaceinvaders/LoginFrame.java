@@ -15,8 +15,6 @@ public class LoginFrame {
     boolean loginStatus = false;
     Login login = new Login();
 
-    UserControll userc = new UserControll();
-
     public void startlogin() {
         frame = new JFrame("로그인");
         signinPanel = new JPanel();
@@ -88,7 +86,6 @@ public class LoginFrame {
             user.Password = password.getText();
 
             if(login.login(user.Id,user.Password)){
-                userc.AddUser(user);
                 loginStatus = true;
                 frame.dispose();
             }else{
