@@ -152,7 +152,10 @@ public class Game extends Canvas
 		// clear out any existing entities and intialise a new set
 		entities.clear();
 		initEntities();
-		
+
+		//점수 초기화
+		loginFrame.user.resetScore();
+
 		// blank out any keyboard settings we might currently have
 		leftPressed = false;
 		rightPressed = false;
