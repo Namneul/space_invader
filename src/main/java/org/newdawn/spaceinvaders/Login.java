@@ -1,9 +1,9 @@
 package org.newdawn.spaceinvaders;
 import java.sql.*;
 public class Login {
-    private final String dbUrl = "jdbc:mysql://localhost:3306/SpaceInvader";
-    private final String dbUser = "root";
-    private final String dbPass = "sshs8458@";
+    private final String dbUrl = "jdbc:mysql://34.47.73.59:3306/spaceinvader";
+    private final String dbUser = "remoteuser";
+    private final String dbPass = "sshs8458";
     Connection con = null;
     PreparedStatement psmt = null;
 
@@ -102,7 +102,7 @@ public class Login {
     }
 
     public ResultSet getAllScore() {
-        String sql = "select * from ScoreBoard";
+        String sql = "select * from ScoreBoard ORDER BY Score DESC";
         try{
             psmt = con.prepareStatement(sql);
             ResultSet rs = psmt.executeQuery();
