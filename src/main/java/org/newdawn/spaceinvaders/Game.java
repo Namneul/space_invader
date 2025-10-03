@@ -11,11 +11,8 @@ import java.util.ArrayList;
 
 import javax.swing.*;
 
-import org.newdawn.spaceinvaders.entity.AlienEntity;
-import org.newdawn.spaceinvaders.entity.Entity;
-import org.newdawn.spaceinvaders.entity.ShipEntity;
-import org.newdawn.spaceinvaders.entity.ShotEntity;
-import org.newdawn.spaceinvaders.entity.AlienShotEntity;
+import org.newdawn.spaceinvaders.entity.*;
+import org.newdawn.spaceinvaders.stage.*;
 
 /**
  * The main hook of our game. This class with both act as a manager
@@ -80,6 +77,9 @@ public class Game extends Canvas
 	private Sprite greyHeartSprite;
 	private Sprite mainBackground;
 	private final int MAX_LIVES = 3;
+    private ArrayList<Stage> stages;      // 스테이지 목록
+    private int currentStageIndex;          // 현재 스테이지 인덱스
+    private Stage currentStage;
 
 	/**
 	 * Construct our game and set it running.
@@ -139,6 +139,7 @@ public class Game extends Canvas
 		// initialise the entities in our game so there's something
 		// to see at startup
 		initEntities();
+        loadStages(); // 스테이지 목록 로드
 		redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
 		greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
 		mainBackground = SpriteStore.get().getSprite("mainBackground.png");
@@ -173,13 +174,8 @@ public class Game extends Canvas
 		playerLives = MAX_LIVES;
 
 		// create a block of aliens (5 rows, by 12 aliens, spaced evenly)
-		alienCount = 0;
-		for (int row=0;row<3;row++) {
-			for (int x=0;x<12;x++) {
-				Entity alien = new AlienEntity(this,100+(x*50),(50)+row*30);
-				entities.add(alien);
-				alienCount++;
-			}
+        if (currentStage != null) {
+            currentStage.initialize(this, entities);
 		}
 	}
 
@@ -228,8 +224,16 @@ public class Game extends Canvas
 	 * are dead.
 	 */
 	public void notifyWin() {
-		message = "Well done! You Win!";
-		waitingForKeyPress = true;
+        currentStageIndex++; // 다음 스테이지로 인덱스 증가
+        // 만약 마지막 스테이지까지 클리어했다면
+        if (currentStageIndex >= stages.size()) {
+            message = "Well done! You Win!";
+            waitingForKeyPress = true;
+        } else {
+            // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
+            currentStage = stages.get(currentStageIndex);
+            startGame();
+        }
 	}
 	
 	/**
@@ -284,6 +288,21 @@ public class Game extends Canvas
 	 * - Checking Input
 	 * <p>
 	 */
+    private void loadStages() {
+        stages = new ArrayList<>();
+        stages.add(new Stage1());
+        stages.add(new Stage2());
+        stages.add(new Stage3());
+        stages.add(new Stage4());
+        stages.add(new Stage5());
+
+        currentStageIndex = 0; // 0번 인덱스(Stage 1)부터 시작
+        currentStage = stages.get(currentStageIndex);
+    }
+
+    public void setAlienCount(int count) {
+        this.alienCount = count;
+    }
 
 	public void gameLoop() {
 		long lastLoopTime = SystemTimer.getTime();
