@@ -544,6 +544,12 @@ public class Game extends Canvas
 		frame.repaint();
 
 		menuButtons[0].addActionListener(e -> {
+			//로그인 안하고 게임진행시
+			if(loginFrame.user == null) {
+				loginFrame.user = new User();
+				loginFrame.user.Id = "Guest";
+			}
+
 			frame.setContentPane(gamePanel);
 			frame.revalidate();
 			frame.repaint();
