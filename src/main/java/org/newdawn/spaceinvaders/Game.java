@@ -184,6 +184,12 @@ public class Game extends Canvas
 		entities.add(shot);
 	}
 
+	//아이템 생성 로직
+	public void itemDrop(Entity alien) {
+		EvolveItemEntity item = new EvolveItemEntity(this, "sprites/gems_db16.png",alien.getX(),alien.getY());
+		entities.add(item);
+	}
+
 	/**
 	 * Notification from a game entity that the logic of the game
 	 * should be run at the next opportunity (normally as a result of some
@@ -239,9 +245,14 @@ public class Game extends Canvas
 	/**
 	 * Notification that an alien has been killed
 	 */
-	public void notifyAlienKilled() {
+	//죽은 에일리언 객체를 넘겨줌 ->아이템 드랍위치를 위해서
+	public void notifyAlienKilled(Entity alien) {
 		// reduce the alient count, if there are none left, the player has won!
 		alienCount--;
+
+		if(Math.random()<0.1){
+			itemDrop(alien);
+		}
 		loginFrame.user.increaseScore();
 		if (alienCount == 0) {
 			loginFrame.user.compareScore(loginFrame);
