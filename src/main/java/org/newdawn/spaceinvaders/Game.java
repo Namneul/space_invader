@@ -250,7 +250,7 @@ public class Game extends Canvas
 		// reduce the alient count, if there are none left, the player has won!
 		alienCount--;
 
-		if(Math.random()<0.1){
+		if(Math.random()<0.5){
 			itemDrop(alien);
 		}
 		loginFrame.user.increaseScore();

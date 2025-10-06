@@ -1,8 +1,9 @@
 package org.newdawn.spaceinvaders.entity;
 
 import org.newdawn.spaceinvaders.Game;
-
-public class EvolveItemEntity extends Entity {
+import org.newdawn.spaceinvaders.SpriteStore;
+//진화 아이템 생성과 플레이어와 충돌시 동작 로직
+public class EvolveItemEntity extends Entity{
     private Game game;
     private int moveSpeed = 200;
     public EvolveItemEntity(Game game, String evolveitem, int x, int y) {
@@ -22,10 +23,8 @@ public class EvolveItemEntity extends Entity {
     public void collidedWith(Entity other) {
         if (other instanceof ShipEntity) {
             game.removeEntity(this);
+            ((ShipEntity) other).upgrade();
         }
     }
 
-    public void itemCreate(){
-
-    }
 }

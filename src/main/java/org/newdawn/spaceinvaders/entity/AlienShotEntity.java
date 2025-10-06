@@ -1,8 +1,9 @@
 package org.newdawn.spaceinvaders.entity;
 
 import org.newdawn.spaceinvaders.Game;
+import org.newdawn.spaceinvaders.SpriteStore;
 
-public class AlienShotEntity extends Entity {
+public class AlienShotEntity extends Entity{
     private double moveSpeed = 300;
     private Game game;
     private boolean used = false;
@@ -29,8 +30,10 @@ public class AlienShotEntity extends Entity {
 
         if (other instanceof ShipEntity) {
             game.removeEntity(this);
+            ((ShipEntity) other).resetUpgrade();
             game.notifyDeath();
             used = true;
         }
     }
+
 }
