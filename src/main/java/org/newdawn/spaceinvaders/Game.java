@@ -688,8 +688,7 @@ public class Game extends Canvas
 		frame.repaint();
 
         menuButtons[0].addActionListener(e -> {
-            if (isGameLoopRunnin
-            g) return;
+            if (isGameLoopRunning) return;
             currentMode = GameMode.SINGLEPLAY;
 
             if(loginFrame.user == null){
