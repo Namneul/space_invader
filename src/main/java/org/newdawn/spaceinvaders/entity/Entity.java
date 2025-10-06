@@ -5,6 +5,8 @@ import java.awt.Rectangle;
 
 import org.newdawn.spaceinvaders.Sprite;
 import org.newdawn.spaceinvaders.SpriteStore;
+import org.newdawn.spaceinvaders.multiplay.Server;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 /**
  * An entity represents any element that appears in the game. The
@@ -48,10 +50,17 @@ public abstract class Entity {
 		this.y = y;
 	}
 
+    public Entity(ServerGame serverGame, String ref, int x, int y){
+
+    }
+
 	public void setPosition(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
+    public Sprite getSprite(){
+        return this.sprite;
+    }
 
 	/**
 	 * Request that this entity move itself based on a certain ammount

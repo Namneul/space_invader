@@ -6,13 +6,21 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferStrategy;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 import javax.swing.*;
 
 import org.newdawn.spaceinvaders.entity.*;
 import org.newdawn.spaceinvaders.stage.*;
+import org.newdawn.spaceinvaders.multiplay.GameState;
+import org.newdawn.spaceinvaders.multiplay.PlayerInput;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 /**
  * The main hook of our game. This class with both act as a manager
@@ -31,8 +39,14 @@ import org.newdawn.spaceinvaders.stage.*;
  */
 public class Game extends Canvas 
 {
+
+    private volatile boolean isGameLoopRunning = false;
 	/** The stragey that allows us to use accelerate page flipping */
 	private BufferStrategy strategy;
+
+    private Sprite alienSprite;
+
+    private Sprite shotSprite;
 	/** True if the game is currently "running", i.e. the game loop is looping */
 	private boolean gameRunning = true;
 	/** The list of all the entities that exist in our game */
@@ -71,6 +85,7 @@ public class Game extends Canvas
 	/** The game window that we'll update with the frame count */
 	private JFrame container;
 	private JPanel gamePanel;
+    private JButton[] menuButtons;
 
 	private int playerLives;
 	private Sprite redHeartSprite;
@@ -89,6 +104,13 @@ public class Game extends Canvas
 
 
 	private Image mainImage;
+
+    public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
+    private GameMode currentMode = GameMode.MAIN_MENU;
+    private Socket socket;
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
+    private volatile TreeMap<Integer, ServerGame.Entity> networkEntities = new TreeMap<>();
 
 	public Game() {
 		// create a frame to contain our game
@@ -143,6 +165,8 @@ public class Game extends Canvas
 		redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
 		greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
 		mainBackground = SpriteStore.get().getSprite("mainBackground.png");
+        this.alienSprite = SpriteStore.get().getSprite("sprites/alien.gif");
+        this.shotSprite = SpriteStore.get().getSprite("sprites/shot.gif");
 	}
 	
 	/**
@@ -320,7 +344,6 @@ public class Game extends Canvas
 		JFrame frame = new JFrame("Space Invaders");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-
 		// keep looping round til the game ends
 		while (gameRunning) {
 			// work out how long its been since the last update, this
@@ -346,11 +369,26 @@ public class Game extends Canvas
 			Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 			g.setColor(Color.black);
 			g.fillRect(0,0,800,600); // 배경 색
+            if (waitingForKeyPress) {
+                g.setColor(Color.white);
+
+
+                g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
+                g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
+            }
 
 			g.setColor(Color.WHITE);
 			g.setFont(new Font("Serif", Font.BOLD, 20));
 			g.drawString("Score: " + loginFrame.user.Score, 650, 580);
-			
+            for (int i = 0; i < MAX_LIVES; i++) {
+                Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
+                heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
+            }
+
+
+            // finally, we've completed drawing so clear up the graphics
+            // and flip the buffer over
+            if (currentMode == GameMode.SINGLEPLAY){
 			// cycle round asking each entity to move itself
 			if (!waitingForKeyPress) {
 				for (int i=0;i<entities.size();i++) {
@@ -404,19 +442,8 @@ public class Game extends Canvas
 
 
 			// if we're waiting for an "any key" press then draw the 
-			// current message 
-			if (waitingForKeyPress) {
-				g.setColor(Color.white);
+			// current message
 
-
-				g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
-				g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
-			}
-			
-			// finally, we've completed drawing so clear up the graphics
-			// and flip the buffer over
-			g.dispose();
-			    strategy.show();
 			
 			// resolve the movement of the ship. First assume the ship 
 			// isn't moving. If either cursor key is pressed then
@@ -438,9 +465,47 @@ public class Game extends Canvas
 			// we've recorded when we started the frame. We add 10 milliseconds
 			// to this and then factor in the current time to give 
 			// us our final value to wait for
-			SystemTimer.sleep(lastLoopTime+10-SystemTimer.getTime());
-		}
-	}
+        }
+         else if (currentMode == GameMode.MULTIPLAY) {
+
+             if (networkEntities != null){
+
+                 for (ServerGame.Entity entity: networkEntities.values()){
+//                     System.out.println("Drawing: " + entity.getType() + " at X="+entity.getX() + ", Y=" + entity.getY());
+                     Sprite spriteToDraw = null;
+                     switch (entity.getType()){
+                         case PLAYER:
+                             spriteToDraw = this.ship.getSprite();
+                             break;
+                         case SHOT:
+                             spriteToDraw = this.shotSprite;
+                             break;
+                         case ALIEN:
+                             spriteToDraw = this.alienSprite;
+                             break;
+                     }
+                     if (spriteToDraw != null){
+                         spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
+
+                     }
+                 }
+             }
+         }
+                if (loginFrame.user != null) {
+                    g.setColor(Color.WHITE);
+                    g.setFont(new Font("Serif", Font.BOLD, 20));
+                    g.drawString("Score: " + loginFrame.user.Score, 650, 580);
+                }
+                for (int i = 0; i < MAX_LIVES; i++) {
+                    Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
+                    heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
+            }
+            g.dispose();
+            strategy.show();
+            SystemTimer.sleep(lastLoopTime+10-SystemTimer.getTime());
+        }
+
+    }
 
 	/**
 	 * A class to handle keyboard input from the user. The class
@@ -466,7 +531,8 @@ public class Game extends Canvas
 		 * @param e The details of the key that was pressed 
 		 */
 		public void keyPressed(KeyEvent e) {
-			// if we're waiting for an "any key" typed then we don't 
+            if (currentMode == GameMode.SINGLEPLAY){
+			// if we're waiting for an "any key" typed then we don't
 			// want to do anything with just a "press"
 			if (waitingForKeyPress) {
 				return;
@@ -482,7 +548,33 @@ public class Game extends Canvas
 			if (e.getKeyCode() == KeyEvent.VK_SPACE) {
 				firePressed = true;
 			}
-		} 
+		} else if (currentMode == GameMode.MULTIPLAY) {
+                if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                    try {
+                        outputStream.writeObject(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
+                        outputStream.reset();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+                if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    try {
+                        outputStream.writeObject(new PlayerInput(PlayerInput.Action.MOVE_RIGHT));
+                        outputStream.reset();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    try {
+                        outputStream.writeObject(new PlayerInput(PlayerInput.Action.FIRE));
+                        outputStream.reset();
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+        }
 		
 		/**
 		 * Notification from AWT that a key has been released.
@@ -492,19 +584,41 @@ public class Game extends Canvas
 		public void keyReleased(KeyEvent e) {
 			// if we're waiting for an "any key" typed then we don't 
 			// want to do anything with just a "released"
-			if (waitingForKeyPress) {
-				return;
-			}
-			
-			if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-				leftPressed = false;
-			}
-			if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-				rightPressed = false;
-			}
-			if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-				firePressed = false;
-			}
+            if (currentMode == GameMode.SINGLEPLAY) {
+                if (waitingForKeyPress) {
+                    return;
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                    leftPressed = false;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    rightPressed = false;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    firePressed = false;
+                }
+            }else if (currentMode == GameMode.MULTIPLAY) {
+                try {
+                    if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                        // 1. 왼쪽 키를 뗐다고 클라이언트에 기록합니다.
+                        leftPressed = false;
+                        // 2. 만약 오른쪽 키도 눌려있지 않다면, '움직임 멈춤'을 보고합니다.
+                        if (!rightPressed) {
+                            outputStream.writeObject(new PlayerInput(PlayerInput.Action.STOP));
+                        }
+                    } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                        // 1. 오른쪽 키를 뗐다고 클라이언트에 기록합니다.
+                        rightPressed = false;
+                        // 2. 만약 왼쪽 키도 눌려있지 않다면, '움직임 멈춤'을 보고합니다.
+                        if (!leftPressed) {
+                            outputStream.writeObject(new PlayerInput(PlayerInput.Action.STOP));
+                        }
+                    }
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
 		}
 
 		/**
@@ -573,37 +687,89 @@ public class Game extends Canvas
 		frame.revalidate();
 		frame.repaint();
 
-		menuButtons[0].addActionListener(e -> {
-			//로그인 안하고 게임진행시
-			if(loginFrame.user == null) {
-				loginFrame.user = new User();
-				loginFrame.user.Id = "Guest";
-			}
+        menuButtons[0].addActionListener(e -> {
+            if (isGameLoopRunnin
+            g) return;
+            currentMode = GameMode.SINGLEPLAY;
 
-			frame.setContentPane(gamePanel);
-			frame.revalidate();
-			frame.repaint();
-			requestFocus();
+            if(loginFrame.user == null){
+                loginFrame.user = new User();
+                loginFrame.user.Id = "Guest";
+            }
+            frame.setContentPane(gamePanel);
+            frame.revalidate();
+            frame.repaint();
+            requestFocus();
 
-			createBufferStrategy(2);
-			strategy = getBufferStrategy();
+            createBufferStrategy(2);
+            strategy = getBufferStrategy();
 
 			new Thread(() -> {gameLoop();}).start();
 		});
 
-		menuButtons[1].addActionListener(e -> {
-			buttonController.pressLoginBtn(loginFrame,panel,frame);
-		});
+        menuButtons[1].addActionListener(e -> {
+            buttonController.pressLoginBtn(loginFrame,panel,frame);
+        });
 
-		menuButtons[2].addActionListener(e -> {
-			try{
-				buttonController.pressRankBtn(loginFrame);
-			}catch(SQLException ex){
-				ex.printStackTrace();
-			}
-		});
+        menuButtons[2].addActionListener(e -> {
+            try{
+                buttonController.pressRankBtn(loginFrame);
+            }catch(SQLException ex){
+                ex.printStackTrace();
+            }
+        });
+        menuButtons[3].addActionListener(e ->{
+            if (isGameLoopRunning) return;
+            frame.setContentPane(gamePanel);
+            frame.revalidate();
+            frame.repaint();
+            requestFocusInWindow();
+            try {
+                createBufferStrategy(2);
+                strategy = getBufferStrategy();
+                System.out.println("[DEBUG] BufferStrategy 생성 시도. 생성된 strategy 객체: " + strategy);
+            } catch (Exception ex) {
+                System.err.println("[FATAL ERROR] BufferStrategy 생성 중 예외 발생!");
+                ex.printStackTrace();
+                return; // strategy 생성 실패 시 더 이상 진행하지 않음
+            }
 
-	}
+            new Thread(() -> {
+                try {
+                    startMultiplay();
+                    currentMode = GameMode.MULTIPLAY;
+                    isGameLoopRunning = true;
+                    gameLoop();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }).start();
+        });
+
+    }
+
+    public void startMultiplay() throws IOException{
+        socket = new Socket("localhost", 1234);
+        outputStream = new ObjectOutputStream(socket.getOutputStream());
+        inputStream = new ObjectInputStream(socket.getInputStream());
+        Thread ListenForServerUpdates = new Thread(){
+            public void run(){
+                while (socket.isConnected()){
+                    try {
+                        GameState newState = (GameState) inputStream.readObject();
+                        networkEntities = newState.getEntities();
+                        System.out.println("Client: 서버로부터 " + networkEntities.size() + "개의 엔티티 수신 완료.");
+                    } catch (Exception exception){
+                        break;
+                    }
+                }
+            }
+        };
+        ListenForServerUpdates.start();
+        this.currentMode = GameMode.MULTIPLAY;
+    }
+
+
 
 	/**
 	 * The entry point into the game. We'll simply create an
