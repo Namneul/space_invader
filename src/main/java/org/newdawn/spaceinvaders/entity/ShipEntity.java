@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders.entity;
 
 import org.newdawn.spaceinvaders.Game;
+import org.newdawn.spaceinvaders.SpriteStore;
 
 /**
  * The entity that represents the players ship
@@ -10,6 +11,7 @@ import org.newdawn.spaceinvaders.Game;
 public class ShipEntity extends Entity {
 	/** The game in which the ship exists */
 	private Game game;
+	public int upgradeCount = 0;
 	
 	/**
 	 * Create a new entity to represent the players ship
@@ -24,6 +26,20 @@ public class ShipEntity extends Entity {
 		
 		this.game = game;
 	}
+
+	//비행기 업그레이드 관리
+	public void upgrade() {
+		upgradeCount++;
+		if(upgradeCount <= 3) {
+			this.sprite = SpriteStore.get().getSprite("sprites/ship/shiptype" + upgradeCount + ".png");
+		}
+	}
+
+	public void resetUpgrade() {
+		upgradeCount = 0;
+		this.sprite = SpriteStore.get().getSprite("sprites/ship.gif");
+	}
+
 	
 	/**
 	 * Request that the ship move itself based on an elapsed ammount of
