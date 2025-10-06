@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders.entity;
 
 import org.newdawn.spaceinvaders.Game;
+import org.newdawn.spaceinvaders.SpriteStore;
 
 /**
  * An entity representing a shot fired by the player's ship
@@ -14,6 +15,8 @@ public class ShotEntity extends Entity {
 	private Game game;
 	/** True if this shot has been "used", i.e. its hit something */
 	private boolean used = false;
+
+	private int upgradeCount = 0;
 	
 	/**
 	 * Create a new shot from the player

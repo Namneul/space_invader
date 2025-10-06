@@ -24,6 +24,7 @@ public class EvolveItemEntity extends Entity{
         if (other instanceof ShipEntity) {
             game.removeEntity(this);
             ((ShipEntity) other).upgrade();
+
         }
     }
 

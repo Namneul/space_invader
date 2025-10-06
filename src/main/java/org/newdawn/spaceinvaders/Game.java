@@ -166,7 +166,7 @@ public class Game extends Canvas
 		greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
 		mainBackground = SpriteStore.get().getSprite("mainBackground.png");
         this.alienSprite = SpriteStore.get().getSprite("sprites/alien.gif");
-        this.shotSprite = SpriteStore.get().getSprite("sprites/shot.gif");
+        this.shotSprite = SpriteStore.get().getSprite("sprites/shots/shot0.png");
 	}
 	
 	/**
@@ -305,10 +305,10 @@ public class Game extends Canvas
 		if (System.currentTimeMillis() - lastFire < firingInterval) {
 			return;
 		}
-		
+
 		// if we waited long enough, create the shot entity, and record the time.
 		lastFire = System.currentTimeMillis();
-		ShotEntity shot = new ShotEntity(this,"sprites/shot.gif",ship.getX()+10,ship.getY()-30);
+		ShotEntity shot = new ShotEntity(this,"sprites/shots/shot"+((ShipEntity)ship).upgradeCount+".png",ship.getX()+10,ship.getY()-30);
 		entities.add(shot);
 	}
 	

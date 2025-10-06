@@ -30,8 +30,8 @@ public class ShipEntity extends Entity {
 
 	//비행기 업그레이드 관리
 	public void upgrade() {
-		upgradeCount++;
-		if(upgradeCount <= 3) {
+		if(upgradeCount < 3) {
+			upgradeCount++;
 			this.sprite = SpriteStore.get().getSprite("sprites/ship/shiptype" + upgradeCount + ".png");
 		}
 	}
