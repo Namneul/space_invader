@@ -13,6 +13,7 @@ public class ShipEntity extends Entity {
 	/** The game in which the ship exists */
 	private Game game;
 	public int upgradeCount = 0;
+	private int damage = 50;
 
 	/**
 	 * Create a new entity to represent the players ship
@@ -32,6 +33,7 @@ public class ShipEntity extends Entity {
 	public void upgrade() {
 		if(upgradeCount < 3) {
 			upgradeCount++;
+			damage += 50;
 			this.sprite = SpriteStore.get().getSprite("sprites/ship/shiptype" + upgradeCount + ".png");
 		}
 	}
