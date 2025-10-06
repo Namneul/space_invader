@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders.entity;
 
 import org.newdawn.spaceinvaders.Game;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 /**
  * The entity that represents the players ship
@@ -24,7 +25,8 @@ public class ShipEntity extends Entity {
 		
 		this.game = game;
 	}
-	
+
+
 	/**
 	 * Request that the ship move itself based on an elapsed ammount of
 	 * time
