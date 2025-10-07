@@ -4,6 +4,8 @@ import org.newdawn.spaceinvaders.Game;
 import org.newdawn.spaceinvaders.Sprite;
 import org.newdawn.spaceinvaders.SpriteStore;
 
+import java.awt.*;
+
 /**
  * An entity which represents one of our space invader aliens.
  * 
@@ -111,5 +113,35 @@ public class AlienEntity extends Entity {
 	 */
 	public void collidedWith(Entity other) {
 		// collisions with aliens are handled elsewhere
+	}
+
+	//체력관리 메서드
+	private int maxHP = 10;
+	private int currentHP = 10;
+
+	@Override
+	public void draw(Graphics g) {
+		super.draw(g);
+
+		int barWidth = 40;
+		int barHeight = 3;
+		int barx = this.getX();
+		int bary = this.getY() + sprite.getHeight() + 2;
+
+		double healthPercent = (double)currentHP / maxHP;
+
+		g.setColor(Color.red);
+		g.fillRect(barx, bary, barWidth, barHeight);
+
+		g.setColor(Color.green);
+		g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
+	}
+	//체력감소
+	public void healthdamage(int damage) {
+		currentHP -= damage;
+		if (currentHP <= 0) {
+			game.removeEntity(this);
+			game.notifyAlienKilled(this);
+		}
 	}
 }
