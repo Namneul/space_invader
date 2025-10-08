@@ -14,7 +14,7 @@ public class ButtonController {
             loginFrame.startlogin();
             loginFrame.frame.addWindowListener(new WindowAdapter() {
                 public void windowClosed(WindowEvent e) {
-                    String tempId = loginFrame.user.Id;
+                    String tempId =  loginFrame.user.Id;
                     JLabel userlabel = new JLabel(tempId);
                     userlabel.setLayout(null);
                     userlabel.setBounds(10, 10, 200, 30);
