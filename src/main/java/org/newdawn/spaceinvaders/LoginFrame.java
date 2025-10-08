@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class LoginFrame {
@@ -10,35 +11,62 @@ public class LoginFrame {
 
     JButton loginButton;
     JButton signupButton;
+    private Sprite loginBackground;
     JTextField userId;
     JPasswordField password;
     boolean loginStatus = false;
     Login login = new Login();
 
+
     public void startlogin() {
+        loginBackground = SpriteStore.get().getSprite("loginBackground.png");
+        ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("signInBtn.png"));
+        ImageIcon signupIcon = new ImageIcon(getClass().getClassLoader().getResource("signUpBtn.png"));
         frame = new JFrame("로그인");
-        signinPanel = new JPanel();
+        this.signinPanel = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                loginBackground.draw(g, 0, 0);
+            }
+        };
         signinPanel.setPreferredSize(new Dimension(800,600));
         signinPanel.setLayout(null);
 
-        signupButton = new JButton("회원가입");
-        signupButton.setBounds(300,365,200,50);
+        signupButton = new JButton(signupIcon);
+        signupButton.setBounds(300,444,200,50);
+        signupButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        signupButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        signupButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
 
-        loginButton = new JButton("로그인");
-        loginButton.setBounds(300,315,200,50);
+        loginButton = new JButton(loginIcon);
+        loginButton.setBounds(300,377,200,50);
+        loginButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        loginButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        loginButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
 
         userId = new JTextField(10);
-        userId.setBounds(300,215,200,50);
+        userId.setBounds(300,222,200,50);
+        userId.setOpaque(false); // 1. 배경을 투명하게 설정
+        userId.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
+        userId.setForeground(Color.BLACK); // 3. 글자 색 변경
+        userId.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        userId.setHorizontalAlignment(JTextField.LEFT); // 5. 텍스트 가운데 정렬
 
         password = new JPasswordField(10);
-        password.setBounds(300,265,200,50);
+        password.setBounds(300,302,200,50);
+        password.setOpaque(false); // 1. 배경을 투명하게 설정
+        password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
+        password.setForeground(Color.BLACK); // 3. 글자 색 변경
+        password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        password.setHorizontalAlignment(JPasswordField.LEFT); // 5. 텍스트 가운데 정렬
 
         signinPanel.add(signupButton);
         signinPanel.add(loginButton);
         signinPanel.add(userId);
         signinPanel.add(password);
 
-        frame.add(signinPanel);
+        frame.setContentPane(this.signinPanel);
         frame.pack();
         frame.setVisible(true);
         AuthLogin();
@@ -48,20 +76,50 @@ public class LoginFrame {
 
     }
     public void signUp(){
-        signupPanel = new JPanel();
+        ImageIcon signupIcon = new ImageIcon(getClass().getClassLoader().getResource("signUpBtn.png"));
+        ImageIcon backIcon = new ImageIcon(getClass().getClassLoader().getResource("backBtn.png"));
+        loginBackground = SpriteStore.get().getSprite("loginBackground.png");
+        signupPanel = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                loginBackground.draw(g, 0, 0);
+            }
+        };
         signupPanel.setPreferredSize(new Dimension(800,600));
         signupPanel.setLayout(null);
 
-        JButton SUbtn = new JButton("회원가입");
-        SUbtn.setBounds(300,315,200,50);
+        JButton SUbtn = new JButton(signupIcon);
+        SUbtn.setBounds(300,377,200,50);
+        SUbtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        SUbtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        SUbtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+
+        JButton backBtn = new JButton(backIcon);
+        backBtn.setBounds(300,444,200,50);
+        backBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        backBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        backBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
 
         JTextField username = new JTextField(10);
-        username.setBounds(300,215,200,50);
+        username.setBounds(300,222,200,50);
+        username.setOpaque(false); // 1. 배경을 투명하게 설정
+        username.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
+        username.setForeground(Color.BLACK); // 3. 글자 색 변경
+        username.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        username.setHorizontalAlignment(JTextField.LEFT); // 5. 텍스트 가운데 정렬
+
 
         JTextField password = new JTextField(10);
-        password.setBounds(300,265,200,50);
+        password.setBounds(300,302,200,50);
+        password.setOpaque(false); // 1. 배경을 투명하게 설정
+        password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
+        password.setForeground(Color.BLACK); // 3. 글자 색 변경
+        password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        password.setHorizontalAlignment(JPasswordField.LEFT); // 5. 텍스트 가운데 정렬
 
         signupPanel.add(SUbtn);
+        signupPanel.add(backBtn);
         signupPanel.add(username);
         signupPanel.add(password);
 
@@ -76,6 +134,9 @@ public class LoginFrame {
                 JOptionPane.showMessageDialog(null,"이미 존재하는 아이디입니다");
             }
 
+        });
+        backBtn.addActionListener(e->{
+            frame.setContentPane(this.signinPanel);
         });
     }
 
