@@ -10,7 +10,7 @@ import java.util.TreeMap;
 
 public class Server implements Runnable{
 
-    public final static int TICKS_PER_SECOND = 60;
+    public final static int TICKS_PER_SECOND = 120;
     private final int MILLISECONDS_PER_TICK = 1000000000 / TICKS_PER_SECOND;
     public final static int DEFAULT_PORT_NUMBER = 1234;
 

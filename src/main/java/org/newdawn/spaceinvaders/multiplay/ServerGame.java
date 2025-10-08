@@ -7,6 +7,7 @@ import org.newdawn.spaceinvaders.SpriteStore;
 import org.newdawn.spaceinvaders.SystemTimer;
 import org.newdawn.spaceinvaders.entity.ShipEntity;
 
+import java.awt.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,12 +16,25 @@ import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ServerGame {
+
     private long serverFrame = 0;
+
     private final int WORLD_WIDTH = 800;
+
     private final int WORLD_HEIGHT = 600;
+
     private TreeMap<Integer, Integer> playerAndShipId;
+
     private boolean logicUpdateRequested = false;
+
     private ArrayList<Integer> removeList = new ArrayList<>();
+
+    private boolean gameRunning = true;
+
+
+
+
+
 
     public enum EntityType{
         PLAYER,
@@ -31,12 +45,15 @@ public class ServerGame {
 
 
     public static abstract class Entity implements Serializable {
-        protected transient final ServerGame game;
-        private final int id;
-        private double x, y;
+        protected transient ServerGame game;
+        private int id;
+        protected double x, y;
         private double width, height;
         protected double dx;
+        protected double dy;
         protected EntityType type;
+
+
 
         public Entity(final ServerGame game,double width, double height, double x, double y) {
             this.game = game;
@@ -51,7 +68,6 @@ public class ServerGame {
         public final int getId() {
             return id;
         }
-
 
         public double getX() {
             return x;

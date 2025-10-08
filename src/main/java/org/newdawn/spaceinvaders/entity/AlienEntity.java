@@ -15,7 +15,7 @@ public class AlienEntity extends Entity {
 	/** The game in which the entity exists */
 	private Game game;
 	/** The animation frames */
-	private Sprite[] frames = new Sprite[4];
+	private Sprite[] alienFrames = new Sprite[4];
 	/** The time since the last frame change took place */
 	private long lastFrameChange;
 	/** The frame duration in milliseconds, i.e. how long any given frame of animation lasts */
@@ -34,10 +34,10 @@ public class AlienEntity extends Entity {
 		super("sprites/alien.gif",x,y);
 		
 		// setup the animatin frames
-		frames[0] = sprite;
-		frames[1] = SpriteStore.get().getSprite("sprites/alien2.gif");
-		frames[2] = sprite;
-		frames[3] = SpriteStore.get().getSprite("sprites/alien3.gif");
+		alienFrames[0] = sprite;
+		alienFrames[1] = SpriteStore.get().getSprite("sprites/alien2.gif");
+		alienFrames[2] = sprite;
+		alienFrames[3] = SpriteStore.get().getSprite("sprites/alien3.gif");
 		
 		this.game = game;
 		dx = -moveSpeed;
@@ -62,11 +62,11 @@ public class AlienEntity extends Entity {
 			
 			// update the frame
 			frameNumber++;
-			if (frameNumber >= frames.length) {
+			if (frameNumber >= alienFrames.length) {
 				frameNumber = 0;
 			}
 			
-			sprite = frames[frameNumber];
+			sprite = alienFrames[frameNumber];
 		}
 
 		if (Math.random() < 0.001) {

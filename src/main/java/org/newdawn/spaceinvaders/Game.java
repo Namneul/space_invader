@@ -1,4 +1,4 @@
-package org.newdawn.spaceinvaders;
+    package org.newdawn.spaceinvaders;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import javax.swing.*;
 
 import org.newdawn.spaceinvaders.entity.*;
+import org.newdawn.spaceinvaders.multiplay.ServerAlienEntity;
 import org.newdawn.spaceinvaders.stage.*;
 import org.newdawn.spaceinvaders.multiplay.GameState;
 import org.newdawn.spaceinvaders.multiplay.PlayerInput;
@@ -45,6 +46,8 @@ public class Game extends Canvas
 	private BufferStrategy strategy;
 
     private Sprite alienSprite;
+
+    private Sprite[] alienFrames = new Sprite[4];
 
     private Sprite shotSprite;
 	/** True if the game is currently "running", i.e. the game loop is looping */
@@ -115,6 +118,12 @@ public class Game extends Canvas
 	public Game() {
 		// create a frame to contain our game
 		container = new JFrame("Space Invaders");
+
+
+        alienFrames[0] = SpriteStore.get().getSprite("sprites/alien.gif");
+        alienFrames[1] = SpriteStore.get().getSprite("sprites/alien2.gif");
+        alienFrames[2] = alienFrames[0];
+        alienFrames[3] = SpriteStore.get().getSprite("sprites/alien3.gif");
 
 
 
@@ -481,7 +490,8 @@ public class Game extends Canvas
                              spriteToDraw = this.shotSprite;
                              break;
                          case ALIEN:
-                             spriteToDraw = this.alienSprite;
+                             int moveFrame = ((ServerAlienEntity) entity).getFrameNumber();
+                             spriteToDraw = this.alienFrames[moveFrame];
                              break;
                      }
                      if (spriteToDraw != null){
