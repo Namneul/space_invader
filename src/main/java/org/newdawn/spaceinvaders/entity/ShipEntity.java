@@ -13,7 +13,7 @@ public class ShipEntity extends Entity {
 	/** The game in which the ship exists */
 	private Game game;
 	public int upgradeCount = 0;
-	private int damage = 50;
+	public int damage = 50;
 
 	/**
 	 * Create a new entity to represent the players ship

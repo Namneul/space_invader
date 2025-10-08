@@ -116,8 +116,8 @@ public class AlienEntity extends Entity {
 	}
 
 	//체력관리 메서드
-	private int maxHP = 10;
-	private int currentHP = 10;
+	private int maxHP = 200;
+	private int currentHP = 200;
 
 	@Override
 	public void draw(Graphics g) {
