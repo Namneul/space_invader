@@ -179,7 +179,10 @@ public class Game extends Canvas
 		initEntities();
 
 		//점수 초기화
-		loginFrame.user.resetScore();
+		if(currentStageIndex == 0){
+			loginFrame.user.resetScore();
+		}
+
 
 		// blank out any keyboard settings we might currently have
 		leftPressed = false;
@@ -279,7 +282,6 @@ public class Game extends Canvas
 		}
 		loginFrame.user.increaseScore();
 		if (alienCount == 0) {
-			loginFrame.user.compareScore(loginFrame);
 			notifyWin();
 		}
 		

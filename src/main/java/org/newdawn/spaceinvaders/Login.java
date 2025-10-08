@@ -102,7 +102,7 @@ public class Login {
     }
 
     public ResultSet getAllScore() {
-        String sql = "select * from ScoreBoard ORDER BY Score DESC LIMIT 13";
+        String sql = "select * from ScoreBoard ORDER BY Score DESC LIMIT 14";
         try{
             psmt = con.prepareStatement(sql);
             ResultSet rs = psmt.executeQuery();

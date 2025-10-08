@@ -40,6 +40,7 @@ public class ShipEntity extends Entity {
 
 	public void resetUpgrade() {
 		upgradeCount = 0;
+		damage = 50;
 		this.sprite = SpriteStore.get().getSprite("sprites/ship.gif");
 	}
 
