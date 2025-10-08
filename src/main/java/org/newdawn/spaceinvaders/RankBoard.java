@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,22 +31,36 @@ public class RankBoard {
 
          String[] header = {"Name", "Score"};
 
-        JTable table = new JTable(scores, header);
-        table.setFont(new Font("Serif", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("Serif", Font.PLAIN, 20));
-        table.setRowHeight(30);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(0, 0, 800, 600);
+        //배경 생성코드
+        panel = new JPanel(){Image background = new ImageIcon(RankBoard.class.getResource("/ScoreboardBackground.png")).getImage();
+            @Override
+            public void paintComponent(Graphics g){
+             super.paintComponent(g);
+             g.drawImage(background, 0, 0, null);
+             int starty = 100;
 
-        panel = new JPanel();
+             g.setColor(Color.WHITE);
+             int startXRank = 320;
+             int startXName = 390;
+             int startXScore = 460;
+             for(int i = 0; i < data.size(); i++) {
+
+                 g.drawString((i+1)+"위", startXRank, starty + i * 30);
+                 g.drawString(data.get(i)[0], startXName, starty + i * 30);
+                 g.drawString(data.get(i)[1], startXScore, starty + i * 30);
+                }
+            }
+        };
+
         panel.setLayout(null);
         panel.setBounds(0, 0, 800, 600);
-        panel.add(scrollPane);
 
         frame.add(panel);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
      }
+
+
 }
