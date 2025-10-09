@@ -1,10 +1,7 @@
 package org.newdawn.spaceinvaders;
 
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -96,6 +93,11 @@ public class Game extends Canvas
     private int currentStageIndex;          // 현재 스테이지 인덱스
     private Stage currentStage;
 
+    private boolean showWinOptions = false;
+    private Rectangle nextRect = new Rectangle(300, 300, 150, 50);
+    private Rectangle homeRect = new Rectangle(480, 300, 150, 50);
+
+
     /**
      * Construct our game and set it running.
      */
@@ -167,6 +169,29 @@ public class Game extends Canvas
         mainBackground = SpriteStore.get().getSprite("mainBackground.png");
         this.alienSprite = SpriteStore.get().getSprite("sprites/alien.gif");
         this.shotSprite = SpriteStore.get().getSprite("sprites/shots/shot0.png");
+
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (!showWinOptions) {
+                    return;
+                }
+                int mx = e.getX();
+                int my = e.getY();
+
+                if (nextRect.contains(mx, my)) {
+                    showWinOptions = false;
+                    waitingForKeyPress = false;
+                    currentStage = stages.get(currentStageIndex);
+                    startGame();
+                } else if (homeRect.contains(mx, my)) {
+                    showWinOptions = false;
+                    waitingForKeyPress = false;
+                    mainMenu();
+                }
+            }
+        });
     }
 
     /**
@@ -257,16 +282,61 @@ public class Game extends Canvas
      * are dead.
      */
     public void notifyWin() {
-        currentStageIndex++; // 다음 스테이지로 인덱스 증가
-        // 만약 마지막 스테이지까지 클리어했다면
+        currentStageIndex++;
         if (currentStageIndex >= stages.size()) {
             message = "Well done! You Win!";
             waitingForKeyPress = true;
+            showWinOptions = false;
         } else {
-            // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
+            waitingForKeyPress = true;
+            showWinOptions = true; // 렌더에서 오버레이를 그리게 함
+        }
+    }
+
+
+    public void showStageOptionUI() {
+        // 최상위 레이어드팬 가져오기
+        JLayeredPane layeredPane = container.getLayeredPane();
+
+        // 투명 옵션 패널 생성
+        JPanel optionPanel = new JPanel(null);
+        optionPanel.setBounds(0, 0, container.getWidth(), container.getHeight());
+        optionPanel.setOpaque(false); // 배경 투명
+
+        // 버튼 생성
+        JButton nextStageBtn = new JButton("Next Stage");
+        JButton homeBtn = new JButton("Home");
+        nextStageBtn.setBounds(300, 300, 150, 50);
+        homeBtn.setBounds(480, 300, 150, 50);
+
+        // 옵션 패널에 버튼 추가
+        optionPanel.add(nextStageBtn);
+        optionPanel.add(homeBtn);
+
+        // Canvas 위에 옵션 패널 올리기
+        layeredPane.add(optionPanel, JLayeredPane.POPUP_LAYER);
+        layeredPane.revalidate();
+        layeredPane.repaint();
+
+        // 버튼 동작 정의
+        nextStageBtn.addActionListener(e -> {
+            layeredPane.remove(optionPanel);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+
+            // 다음 스테이지 시작
             currentStage = stages.get(currentStageIndex);
             startGame();
-        }
+        });
+
+        homeBtn.addActionListener(e -> {
+            layeredPane.remove(optionPanel);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+
+            // 홈 화면으로 이동
+            mainMenu();
+        });
     }
 
     /**
@@ -374,7 +444,6 @@ public class Game extends Canvas
             if (waitingForKeyPress) {
                 g.setColor(Color.white);
 
-
                 g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
                 g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
             }
@@ -386,6 +455,26 @@ public class Game extends Canvas
                 Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
                 heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
             }
+
+            if (showWinOptions) {
+                g.setColor(new Color(0,0,0,140));
+                g.fillRect(0,0,800,600);
+
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 36));
+                g.drawString("Stage Clear!", 300, 240);
+
+                // 버튼
+                g.setColor(Color.DARK_GRAY);
+                g.fillRect(nextRect.x, nextRect.y, nextRect.width, nextRect.height);
+                g.fillRect(homeRect.x, homeRect.y, homeRect.width, homeRect.height);
+
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 18));
+                g.drawString("Next Stage", nextRect.x + 20, nextRect.y + 32);
+                g.drawString("Home", homeRect.x + 50, homeRect.y + 32);
+            }
+
 
 
             // finally, we've completed drawing so clear up the graphics

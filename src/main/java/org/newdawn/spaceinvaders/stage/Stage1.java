@@ -11,7 +11,7 @@ public class Stage1 extends Stage {
     public void initialize(Game game, ArrayList<Entity> entities) {
         int alienCount = 0;
         for (int row = 0; row < 1; row++) {
-            for (int x = 0; x < 10; x++) {
+            for (int x = 0; x < 1; x++) {
                 Entity alien = new AlienEntity(game, 100 + (x * 50), 50 + row * 30);
                 alien.setHorizontalMovement(75); // 느린 속도
                 entities.add(alien);
