@@ -13,8 +13,9 @@ public class ClientHandler implements Runnable {
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
     private int playershipId;
+    private Login loginHost;
 
-    public ClientHandler(Server server,ServerGame serverGame, Socket socket, int playershipId) {
+    public ClientHandler(Server server,ServerGame serverGame, Socket socket, int playershipId, Login loginHost) {
         try {
             this.socket = socket;
             this.server = server;
@@ -22,6 +23,7 @@ public class ClientHandler implements Runnable {
             this.outputStream = new ObjectOutputStream(socket.getOutputStream());
             this.inputStream = new ObjectInputStream(socket.getInputStream());
             this.playershipId = playershipId;
+            this.loginHost = loginHost;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -30,9 +32,32 @@ public class ClientHandler implements Runnable {
     public void run() {
         while (socket.isConnected()) {
             try {
-                PlayerInput input = (PlayerInput) inputStream.readObject();
-                serverGame.processPlayerInput(this.playershipId, input);
+                Object receivedInput = inputStream.readObject();
+                if (receivedInput instanceof LoginRequest){
+                    LoginRequest request = (LoginRequest) receivedInput;
+                    boolean success = loginHost.login(request.getUsername(), request.getPassword());
+                    if (success){
+                        PlayerData playerData = new PlayerData(request.getUsername());
+                        server.getPlayerDataMap().put(this.playershipId, playerData);
+                        System.out.println("Server: playerData for "+ request.getUsername());
+                    }
 
+                    LoginResponse response = new LoginResponse(success, request.getUsername());
+                    outputStream.writeObject(response);
+
+                } else if (receivedInput instanceof SignUpRequest) {
+                    SignUpRequest request = (SignUpRequest) receivedInput;
+                    boolean success = loginHost.signUp(request.getUsername(), request.getPassword());
+                    if (success){
+                        PlayerData playerData = new PlayerData(request.getUsername());
+                        server.getPlayerDataMap().put(this.playershipId, playerData);
+                    }
+                    String message = success ? "Sgin up sccessful!" :"Username already exist";
+                    SignUpResponse resonse = new SignUpResponse(success, message);
+                    outputStream.writeObject(resonse);
+                } else{
+                serverGame.processPlayerInput(this.playershipId, (PlayerInput) receivedInput);
+                }
             } catch (IOException | ClassNotFoundException e) {
                 serverGame.removeEntity(this.playershipId);
                 break;

@@ -2,11 +2,11 @@ package org.newdawn.spaceinvaders.multiplay;
 
 public class ServerAlienShotEntity extends ServerGame.Entity {
 
-    private double moveSpeed = 300;
 
     public ServerAlienShotEntity(ServerGame game, double x, double y) {
         super(game, 10, 10, x, y);
         this.type = ServerGame.EntityType.ALIEN_SHOT;
+        moveSpeed = 300;
     }
 
     @Override
@@ -19,7 +19,6 @@ public class ServerAlienShotEntity extends ServerGame.Entity {
     public void handleCollision(ServerGame.Entity otherEntity) {
         if (otherEntity instanceof ServerPlayerShipEntity) {
             game.removeEntity(this.getId());
-            //playership 죽이기
 
         }
     }

@@ -6,14 +6,13 @@ import org.newdawn.spaceinvaders.SpriteStore;
 
 public class ServerAlienEntity extends ServerGame.Entity {
 
-    private double moveSpeed = 75;
     private long lastFrameChange;
     private long frameDuration = 250;
     private int frameNumber;
 
     public ServerAlienEntity(ServerGame serverGame, int x, int y){
         super(serverGame,20,20,x, y);
-
+        moveSpeed = 75;
         dx = -moveSpeed;
         this.type = ServerGame.EntityType.ALIEN;
     }
@@ -37,9 +36,14 @@ public class ServerAlienEntity extends ServerGame.Entity {
         }
 
         if (Math.random()< 0.001){
-            //alienfire
+            game.alienFires(this);
         }
     }
+
+    public void setMoveSpeed(double moveSpeed){
+        this.moveSpeed = moveSpeed;
+    }
+    public double getMoveSpeed(){ return moveSpeed; }
 
     public int getFrameNumber(){ return frameNumber; }
 
@@ -47,7 +51,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
         dx = -dx;
         setY(getY()+10);
         if (getY()>570){
-            //gameover
+            game.notifyDeath();
         }
     }
 
@@ -57,6 +61,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
         if (otherEntity instanceof ServerShotEntity) {
             game.removeEntity(this.getId());
             game.removeEntity(otherEntity.getId());
+            game.notifyAlienKilled(this, otherEntity.getId());
         }
     }
 }

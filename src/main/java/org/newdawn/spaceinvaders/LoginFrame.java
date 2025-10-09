@@ -1,19 +1,25 @@
 package org.newdawn.spaceinvaders;
 
+import org.newdawn.spaceinvaders.multiplay.Login;
+import org.newdawn.spaceinvaders.multiplay.LoginRequest;
+import org.newdawn.spaceinvaders.multiplay.SignUpRequest;
+
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 
 public class LoginFrame {
     JFrame frame;
     private JPanel signinPanel=null, signupPanel=null ;
     User user;
+    Game game = new Game();
 
     JButton loginButton;
     JButton signupButton;
     JTextField userId;
     JPasswordField password;
     boolean loginStatus = false;
-    Login login = new Login();
+    public Login login = new Login();
 
     public void startlogin() {
         frame = new JFrame("로그인");
@@ -70,10 +76,11 @@ public class LoginFrame {
         frame.repaint();
 
         SUbtn.addActionListener(e->{
-            if(login.signUp(username.getText(),password.getText())){
-                frame.dispose();
-            }else{
-                JOptionPane.showMessageDialog(null,"이미 존재하는 아이디입니다");
+            SignUpRequest request = new SignUpRequest(username.getText(), password.getText());
+            try {
+                game.getOutputStream().writeObject(request);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
 
         });
@@ -85,12 +92,13 @@ public class LoginFrame {
             user.Id = userId.getText();
             user.Password = password.getText();
 
-            if(login.login(user.Id,user.Password)){
-                loginStatus = true;
-                frame.dispose();
-            }else{
-                JOptionPane.showMessageDialog(null,"login failed");
+            LoginRequest request = new LoginRequest(user.Id, user.Password);
+            try {
+                game.getOutputStream().writeObject(request);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
+
         });
     }
 }

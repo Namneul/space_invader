@@ -2,7 +2,6 @@ package org.newdawn.spaceinvaders.multiplay;
 
 public class ServerShotEntity extends ServerGame.Entity {
 
-    private double moveSpeed = 300;
 
 
     private boolean isUsed = false;
@@ -10,6 +9,7 @@ public class ServerShotEntity extends ServerGame.Entity {
     public ServerShotEntity(ServerGame serverGame, double x, double y) {
         super(serverGame,10,10, x, y);
         this.type = ServerGame.EntityType.SHOT;
+        moveSpeed = 300;
     }
 
     @Override
@@ -21,8 +21,13 @@ public class ServerShotEntity extends ServerGame.Entity {
 
     @Override
     public void handleCollision(ServerGame.Entity otherEntity) {
+
+        if (isUsed) return;
+
         if (otherEntity instanceof ServerAlienEntity) {
             game.removeEntity(this.getId());
+            game.removeEntity(otherEntity.getId());
+            isUsed =true;
         }
     }
 }

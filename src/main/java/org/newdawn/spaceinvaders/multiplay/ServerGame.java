@@ -2,10 +2,9 @@ package org.newdawn.spaceinvaders.multiplay;
 
 
 import org.newdawn.spaceinvaders.Game;
-import org.newdawn.spaceinvaders.Sprite;
-import org.newdawn.spaceinvaders.SpriteStore;
+import org.newdawn.spaceinvaders.LoginFrame;
 import org.newdawn.spaceinvaders.SystemTimer;
-import org.newdawn.spaceinvaders.entity.ShipEntity;
+import org.newdawn.spaceinvaders.multiplay.stage.*;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -16,6 +15,33 @@ import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ServerGame {
+
+    private volatile boolean isGameLoopRunning = false;
+
+    private int alienCount;
+
+    private boolean waitingForKeyPress = true;
+    /** True if the left cursor key is currently pressed */
+    private boolean leftPressed = false;
+    /** True if the right cursor key is currently pressed */
+    private boolean rightPressed = false;
+    /** True if we are firing */
+    private boolean firePressed = false;
+    /** True if game logic needs to be applied this loop, normally as a result of a game event */
+    private boolean logicRequiredThisLoop = false;
+
+    private int playerLives;
+
+    private final int MAX_LIVES = 3;
+
+    private int currentStageIndex;          // 현재 스테이지 인덱스
+
+    private Stage currentStage;
+
+    public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
+
+    private Game.GameMode currentMode = Game.GameMode.MAIN_MENU;
+
 
     private long serverFrame = 0;
 
@@ -31,7 +57,15 @@ public class ServerGame {
 
     private boolean gameRunning = true;
 
+    private Server server;
 
+    private int smallestAvailableId = 0;
+
+    private TreeMap<Integer, Entity> entities;
+
+    LoginFrame loginFrame = new LoginFrame();
+
+    private ArrayList<Stage> stages;
 
 
 
@@ -40,7 +74,8 @@ public class ServerGame {
         PLAYER,
         ALIEN,
         SHOT,
-        ALIEN_SHOT
+        ALIEN_SHOT,
+        ITEM
     }
 
 
@@ -52,6 +87,7 @@ public class ServerGame {
         protected double dx;
         protected double dy;
         protected EntityType type;
+        protected double moveSpeed;
 
 
 
@@ -62,8 +98,8 @@ public class ServerGame {
             this.height = height;
             this.x = x;
             this.y = y;
-
         }
+
 
         public final int getId() {
             return id;
@@ -89,6 +125,11 @@ public class ServerGame {
             this.y = y;
         }
 
+        public void setMoveSpeed(double moveSpeed){
+            this.moveSpeed = moveSpeed;
+        }
+        public double getMoveSpeed(){ return moveSpeed; }
+
         public abstract void tick();
 
         public EntityType getType(){
@@ -113,11 +154,9 @@ public class ServerGame {
         public int SHIP_MOVESPEED = 150;
     }
 
-    private int smallestAvailableId = 0;
-    private TreeMap<Integer, Entity> entities;
-    public ServerGame(){
+    public ServerGame(Server server){
+        this.server = server;
         entities = new TreeMap<Integer, Entity>();
-        initEntities();
     }
 
     public TreeMap<Integer, Entity> getEntities(){
@@ -154,6 +193,87 @@ public class ServerGame {
             entities.remove(id);
         }
         removeList.clear();
+    }
+
+    public void alienFires(Entity alien){
+        ServerAlienShotEntity shot = new ServerAlienShotEntity(this, alien.getX(), alien.getY());
+        entities.put(shot.getId(), shot);
+    }
+
+    public void notifyAlienKilled(Entity alien, int killerId) {
+
+        PlayerData killerData = server.getPlayerDataMap().get(killerId);
+        if (killerData != null){
+            killerData.increaseScore();
+        }
+
+        alienCount--;
+        if (alienCount <= 0){
+            notifyWin();
+        }
+
+        if(Math.random()<0.5){
+            itemDrop(alien);
+        }
+        // if there are still some aliens left then they all need to get faster, so
+        // speed up all the existing aliens
+        for (Entity entity: entities.values()){
+            if (entity instanceof ServerAlienEntity) {
+                // speed up by 2%
+                entity.setMoveSpeed(entity.getMoveSpeed()*1.02);
+            }
+        }
+    }
+
+   public void notifyDeath(int deadPlayerId) {
+
+        PlayerData deadPlayerData = server.getPlayerDataMap().get(deadPlayerId);
+        if (deadPlayerData != null){
+            deadPlayerData.decreaseLives();
+
+            if (deadPlayerData.getLives() <= 0){
+                removeEntity(deadPlayerId);
+            } else {
+                Entity ship = entities.get(deadPlayerId);
+                if (ship != null){
+                    ship.setX(370);
+                    ship.setY(550);
+                }
+            }
+        }
+    }
+
+    public void notifyWin() {
+        currentStageIndex++; // 다음 스테이지로 인덱스 증가
+        // 만약 마지막 스테이지까지 클리어했다면
+        if (currentStageIndex >= stages.size()) {
+            System.out.println("All Clear!");
+            for (PlayerData data:server.getPlayerDataMap().values()){
+                server.getLoginHost().insertScore(data.getId(), data.getScore());
+            }
+        } else {
+            // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
+            currentStage = stages.get(currentStageIndex);
+            initEntities();
+        }
+    }
+
+    public void itemDrop(Entity alien){
+        ServerEvolveItemEntity item = new ServerEvolveItemEntity(this, alien.getX(), alien.getY());
+        entities.put(item.getId(), item);
+    }
+
+    private void loadStages(){
+        stages = new ArrayList<>();
+        stages.add(new Stage1());
+        stages.add(new Stage2());
+        stages.add(new Stage3());
+        stages.add(new Stage4());
+        stages.add(new Stage5());
+    }
+
+    public void setAlienCount(int alienCount){
+        this.alienCount = alienCount;
     }
 
     public int spawnPlayerEntity() {
@@ -193,6 +313,7 @@ public class ServerGame {
             return;
         }
         playerShip.setLastFireTime();
+        int shipUpgradeCount = playerShip.getUpgradeCount();
         ServerShotEntity shot = new  ServerShotEntity(this, playerShip.getX(), playerShip.getY());
         entities.put(shot.getId(), shot);
     }

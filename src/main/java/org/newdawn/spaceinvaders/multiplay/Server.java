@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Server implements Runnable{
 
@@ -17,10 +19,13 @@ public class Server implements Runnable{
     private ServerSocket serverSocket;
     private final ServerGame serverGame;
     private final ArrayList<ClientHandler> clientHandlers;
+    protected Map<Integer, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+    private Login loginHost;
 
 
-    public Server(final ServerGame serverGame, final int port){
-        this.serverGame = serverGame;
+    public Server(int port){
+        this.serverGame = new ServerGame(this);
+        this.loginHost = new Login();
         try {
             this.serverSocket = new ServerSocket(port);
         } catch (final IOException e) {
@@ -42,7 +47,7 @@ public class Server implements Runnable{
             try {
                 final Socket socket = serverSocket.accept();
                 System.out.println("A new client has connected.");
-                final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, serverGame.spawnPlayerEntity());
+                final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, serverGame.spawnPlayerEntity(), loginHost);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
             } catch (final IOException e) {
@@ -82,11 +87,15 @@ public class Server implements Runnable{
         }
     }
 
+    public Map<Integer, PlayerData> getPlayerDataMap(){ return playerDataMap; }
+
+    public Login getLoginHost(){ return loginHost; }
+
     // server to one client
 
     public static void main(String[] args) throws IOException {
 
-        Server server = new Server(new ServerGame(), DEFAULT_PORT_NUMBER);
+        Server server = new Server(DEFAULT_PORT_NUMBER);
         server.run();
     }
 }

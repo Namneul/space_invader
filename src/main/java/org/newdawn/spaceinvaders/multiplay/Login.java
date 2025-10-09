@@ -1,4 +1,5 @@
-package org.newdawn.spaceinvaders;
+package org.newdawn.spaceinvaders.multiplay;
+import java.io.Serializable;
 import java.sql.*;
 public class Login {
     private final String dbUrl = "jdbc:mysql://34.47.73.59:3306/spaceinvader";
@@ -112,3 +113,4 @@ public class Login {
         }
     }
 }
+

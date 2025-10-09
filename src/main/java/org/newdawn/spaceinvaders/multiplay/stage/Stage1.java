@@ -1,20 +1,24 @@
-package org.newdawn.spaceinvaders.stage;
+package org.newdawn.spaceinvaders.multiplay.stage;
 
+import com.sun.source.tree.Tree;
 import org.newdawn.spaceinvaders.Game;
 import org.newdawn.spaceinvaders.entity.AlienEntity;
 import org.newdawn.spaceinvaders.entity.Entity;
+import org.newdawn.spaceinvaders.multiplay.ServerAlienEntity;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 public class Stage1 extends Stage {
     @Override
-    public void initialize(Game game, ArrayList<Entity> entities) {
+    public void initialize(ServerGame game, TreeMap<Integer, ServerGame.Entity> entities) {
         int alienCount = 0;
         for (int row = 0; row < 1; row++) {
             for (int x = 0; x < 10; x++) {
-                Entity alien = new AlienEntity(game, 100 + (x * 50), 50 + row * 30);
-                alien.setHorizontalMovement(75); // 느린 속도
-                entities.add(alien);
+                ServerAlienEntity alien = new ServerAlienEntity(game, 100 + (x * 50), 50 + row * 30);
+                alien.setMoveSpeed(75); // 느린 속도
+                entities.put(alien.getId(), alien);
                 alienCount++;
             }
         }
