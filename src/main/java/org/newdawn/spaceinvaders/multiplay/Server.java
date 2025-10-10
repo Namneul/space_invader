@@ -1,6 +1,9 @@
 package org.newdawn.spaceinvaders.multiplay;
 
 
+import org.newdawn.spaceinvaders.multiplay.stage.Stage;
+import org.newdawn.spaceinvaders.multiplay.stage.Stage1;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -12,8 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Server implements Runnable{
 
     public final static int TICKS_PER_SECOND = 120;
-    private final int MILLISECONDS_PER_TICK = 1000000000 / TICKS_PER_SECOND;
-    public final static int DEFAULT_PORT_NUMBER = 1234;
+    public final static int DEFAULT_PORT_NUMBER = 12345;
 
     private ServerSocket serverSocket;
     private final ServerGame serverGame;
@@ -46,36 +48,44 @@ public class Server implements Runnable{
         while (clientHandlers.size() < this.maxPlayers) {
             try {
                 final Socket socket = serverSocket.accept();
-                System.out.println("A new client has connected. Players: "+clientHandlers.size()+1);
+                System.out.println("A new client has connected. Players: "+(clientHandlers.size()+1));
                 final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, serverGame.spawnPlayerEntity(), loginHost);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
-                if (clientHandlers.size() == 1){
-                    System.out.println("Waiting for 2P");
+                int remaining = maxPlayers - clientHandlers.size();
+                if (remaining > 0){
+                    System.out.println("Waiting for "+remaining+" more player...");
                 }
             } catch (final IOException e) {
                 e.printStackTrace();
             }
         }
-        System.out.println("Two players connected. Game start!");
+        System.out.println(maxPlayers+" player(s) connected. Game Start!");
         this.gameStarted = true;
+
+        serverGame.initializeFirstStage();
         new Thread(() -> startGameloop()).start();
     }
 
     private void startGameloop() {
-        long lastTickTime = System.nanoTime();
+        final long nanosPerTick =  1_000_000_000L / TICKS_PER_SECOND;
+        long last = System.nanoTime();
 
         while (true) {
-            final long whenShouldNextTickRun = lastTickTime + MILLISECONDS_PER_TICK;
-            if (System.nanoTime() < whenShouldNextTickRun) {
-                continue;
+            long next = last + nanosPerTick;
+            long now = System.nanoTime();
+            long remain = next - now;
+            if (remain > 0){
+                long ms = remain / 1_000_000L;
+                int ns = (int)(remain % 1_000_000L);
+                try {
+                    Thread.sleep(ms, ns);
+                } catch (InterruptedException e){}
             }
 
             serverGame.tick();
-
             sendUpdatesToAll();
-
-            lastTickTime = System.nanoTime();
+            last = next;
         }
     }
 
@@ -86,12 +96,22 @@ public class Server implements Runnable{
         synchronized (originEntities){
             entitiesCopy = new TreeMap<>(originEntities);
         }
-        GameState currentState = new GameState(entitiesCopy,0,3, GameState.GameStatus.PLAYING);
-        System.out.println("Server: " + currentState.getEntities().size() + "개의 엔티티를 클라이언트로 전송 시도.");
+        int remaininglives = 3;
+        if (!playerDataMap.isEmpty()){
+            PlayerData player = playerDataMap.values().iterator().next();
+            remaininglives = player.getLives();
+        }
+        int currentScore = 0;
+        if (!playerDataMap.isEmpty()){
+            PlayerData player = playerDataMap.values().iterator().next();
+            currentScore = player.getScore();
+        }
+        GameState currentState = new GameState(entitiesCopy,currentScore,remaininglives, GameState.GameStatus.PLAYING);
         for (final ClientHandler clientHandler : clientHandlers) {
             clientHandler.sendUpdate(currentState);
         }
     }
+
 
     public Map<Integer, PlayerData> getPlayerDataMap(){ return playerDataMap; }
 
@@ -104,11 +124,7 @@ public class Server implements Runnable{
         int port = DEFAULT_PORT_NUMBER;
         int players = 2;
         if (args.length > 0){
-            try {
-                port = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid port number");
-            }
+            port = Integer.parseInt(args[0]);
         }
         if (args.length > 1 && args[1].equalsIgnoreCase("single")){
             players = 1;

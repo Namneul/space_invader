@@ -12,13 +12,16 @@ public class LoginFrame {
     JFrame frame;
     private JPanel signinPanel=null, signupPanel=null ;
     User user;
-    Game game = new Game();
+    private final Game game;
 
     JButton loginButton;
     JButton signupButton;
     JTextField userId;
     JPasswordField password;
     boolean loginStatus = false;
+    public LoginFrame(Game game){
+        this.game = game;
+    }
     public Login login = new Login();
 
     public void startlogin() {
@@ -76,9 +79,16 @@ public class LoginFrame {
         frame.repaint();
 
         SUbtn.addActionListener(e->{
+
+            if (game.getOutputStream() == null){
+                JOptionPane.showMessageDialog(frame, "서버 연결 안됨");
+                return;
+            }
             SignUpRequest request = new SignUpRequest(username.getText(), password.getText());
             try {
                 game.getOutputStream().writeObject(request);
+                game.getOutputStream().reset();
+                game.getOutputStream().flush();
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -88,13 +98,23 @@ public class LoginFrame {
 
     public void AuthLogin(){
         loginButton.addActionListener(e -> {
+
+            if (game.getOutputStream() == null){
+                JOptionPane.showMessageDialog(frame, "서버 연결 안됨");
+                return;
+            }
+
             user  = new User();
             user.Id = userId.getText();
             user.Password = password.getText();
 
+            boolean ok = game.sendToServer(new LoginRequest(user.Id, user.Password));
+            if (!ok) JOptionPane.showMessageDialog(frame,"서버 연결 전이거나 전송 실패.");
             LoginRequest request = new LoginRequest(user.Id, user.Password);
             try {
                 game.getOutputStream().writeObject(request);
+                game.getOutputStream().reset();
+                game.getOutputStream().flush();
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }

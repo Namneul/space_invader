@@ -1,5 +1,6 @@
 package org.newdawn.spaceinvaders.multiplay;
 
+import org.newdawn.spaceinvaders.Game;
 import org.newdawn.spaceinvaders.LoginFrame;
 import org.newdawn.spaceinvaders.multiplay.stage.*;
 import java.awt.*;
@@ -28,8 +29,6 @@ public class ServerGame {
     private int smallestAvailableId = 0;
 
     private TreeMap<Integer, Entity> entities;
-
-    LoginFrame loginFrame = new LoginFrame();
 
     private ArrayList<Stage> stages;
 
@@ -220,7 +219,7 @@ public class ServerGame {
         } else {
             // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
             currentStage = stages.get(currentStageIndex);
-            initEntities();
+            currentStage.initialize(this, entities);
         }
     }
 
@@ -245,6 +244,8 @@ public class ServerGame {
     public int spawnPlayerEntity() {
         ServerPlayerShipEntity playerShip = new ServerPlayerShipEntity(this, 370, 550);
         entities.put(playerShip.getId(), playerShip);
+
+        server.getPlayerDataMap().computeIfAbsent(playerShip.getId(), id -> new PlayerData("Gues- "+id));
         System.out.println("Server: 플레이어 생성 완료. 총 엔티티 수: " + entities.size());
         return playerShip.getId();
     }
@@ -279,9 +280,21 @@ public class ServerGame {
             return;
         }
         playerShip.setLastFireTime();
+        int owner = playerShip.getId();
         int shipUpgradeCount = playerShip.getUpgradeCount();
-        ServerShotEntity shot = new  ServerShotEntity(this, playerShip.getX(), playerShip.getY());
+        ServerShotEntity shot = new  ServerShotEntity(this, playerShip.getX(), playerShip.getY(), owner, shipUpgradeCount);
         entities.put(shot.getId(), shot);
+    }
+
+    public void initializeFirstStage(){
+        if (stages == null || stages.isEmpty()){
+            loadStages();
+        }
+
+        currentStageIndex = 0;
+        currentStage = stages.get(currentStageIndex);
+        currentStage.initialize(this, entities);
+        System.out.println("ServerGame: "+currentStage.getStageName()+" initialized.");
     }
 
 

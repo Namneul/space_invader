@@ -40,6 +40,10 @@ public class ServerAlienEntity extends ServerGame.Entity {
         }
     }
 
+    public void hit(int dmg){
+//        this.hp -= dmg;
+    }
+
     public void setMoveSpeed(double moveSpeed){
         this.moveSpeed = moveSpeed;
     }
@@ -59,9 +63,9 @@ public class ServerAlienEntity extends ServerGame.Entity {
     @Override
     public void handleCollision(ServerGame.Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity) {
+            game.notifyAlienKilled(this, ((ServerShotEntity) otherEntity).getOwnerId());
             game.removeEntity(this.getId());
             game.removeEntity(otherEntity.getId());
-            game.notifyAlienKilled(this, otherEntity.getId());
         }
     }
 }
