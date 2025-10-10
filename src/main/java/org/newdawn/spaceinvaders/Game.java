@@ -101,6 +101,7 @@ public class Game extends Canvas
      */
 
     LoginFrame loginFrame = new LoginFrame();
+    private JPanel mainPanel;
 
 
     private Image mainImage;
@@ -161,7 +162,6 @@ public class Game extends Canvas
         // initialise the entities in our game so there's something
         // to see at startup
         initEntities();
-        loadStages(); // 스테이지 목록 로드
         redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
         greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
         mainBackground = SpriteStore.get().getSprite("mainBackground.png");
@@ -243,10 +243,25 @@ public class Game extends Canvas
         playerLives--;
 
         if (playerLives <= 0) {
-            message = "Oh no! They got you, try again?";
             loginFrame.user.compareScore(loginFrame);
             removeEntity(ship);
-            waitingForKeyPress = true;
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {}
+
+                // BufferStrategy와 상태 초기화
+                strategy = null;
+                isGameLoopRunning = false;
+                gameRunning = false;
+                waitingForKeyPress = true;
+                SwingUtilities.invokeLater(() -> {
+                    container.setContentPane(mainPanel);
+                    container.revalidate();
+                    container.repaint();
+                });
+            }).start();
+
         } else {
             ship.setPosition(370, 550);
         }
@@ -261,6 +276,7 @@ public class Game extends Canvas
         // 만약 마지막 스테이지까지 클리어했다면
         if (currentStageIndex >= stages.size()) {
             message = "Well done! You Win!";
+            loginFrame.user.compareScore(loginFrame);
             waitingForKeyPress = true;
         } else {
             // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
@@ -348,6 +364,15 @@ public class Game extends Canvas
 
         // keep looping round til the game ends
         while (gameRunning) {
+
+            while (strategy == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
             // work out how long its been since the last update, this
             // will be used to calculate how far the entities should
             // move this loop
@@ -655,18 +680,17 @@ public class Game extends Canvas
         }
     }
 
-
     public void mainMenu() {
         JFrame frame = container;
-        JPanel panel = new JPanel(){
+        mainPanel = new JPanel(){
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 mainBackground.draw(g, 0, 0);
             }
         };
-        panel.setPreferredSize(new Dimension(800, 600));
-        panel.setLayout(null);
+        mainPanel.setPreferredSize(new Dimension(800, 600));
+        mainPanel.setLayout(null);
 
         ButtonController buttonController = new ButtonController();
 
@@ -678,14 +702,14 @@ public class Game extends Canvas
                 new JButton("exit")};
 
         for(int i=0;i<menuButtons.length;i++) {
-            panel.add(menuButtons[i]);
+            mainPanel.add(menuButtons[i]);
         }
         menuButtons[0].setBounds(300,335,200,50);
         menuButtons[1].setBounds(300,395,200,50);
         menuButtons[2].setBounds(300,455,200,50);
         menuButtons[3].setBounds(300,515,200,50);
         //메인화면 패널로 전환
-        frame.setContentPane(panel);
+        frame.setContentPane(mainPanel);
         frame.revalidate();
         frame.repaint();
 
@@ -702,14 +726,22 @@ public class Game extends Canvas
             frame.repaint();
             requestFocus();
 
+            loadStages();
+
             createBufferStrategy(2);
             strategy = getBufferStrategy();
 
-            new Thread(() -> {gameLoop();}).start();
+            new Thread(() -> {
+
+                startGame();
+                isGameLoopRunning = true;
+                gameRunning = true;
+                gameLoop();
+            }).start();
         });
 
         menuButtons[1].addActionListener(e -> {
-            buttonController.pressLoginBtn(loginFrame,panel,frame);
+            buttonController.pressLoginBtn(loginFrame, mainPanel,frame);
         });
 
         menuButtons[2].addActionListener(e -> {
@@ -769,6 +801,7 @@ public class Game extends Canvas
         ListenForServerUpdates.start();
         this.currentMode = GameMode.MULTIPLAY;
     }
+
 
 
 

@@ -77,10 +77,10 @@ public class Login {
         try{
             psmt = con.prepareStatement(sql);
             psmt.setString(1,username);
-            psmt.executeUpdate();
+            psmt.executeQuery();
             ResultSet rs = psmt.getResultSet();
             rs.next();
-            System.out.println("getScore successf");
+            System.out.println("getScore success");
             return rs.getInt(1);
         } catch (SQLException e) {
             System.out.println("Failed to get score "+ e.getMessage());
