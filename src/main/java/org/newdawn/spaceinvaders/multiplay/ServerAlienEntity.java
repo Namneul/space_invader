@@ -51,7 +51,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
         dx = -dx;
         setY(getY()+10);
         if (getY()>570){
-            game.notifyDeath();
+            game.notifyDeath(this.getId());
         }
     }
 

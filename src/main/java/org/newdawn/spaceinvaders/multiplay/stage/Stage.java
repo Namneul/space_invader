@@ -1,9 +1,5 @@
 package org.newdawn.spaceinvaders.multiplay.stage;
-
-import org.newdawn.spaceinvaders.Game;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
-import org.newdawn.spaceinvaders.entity.Entity;
-import java.util.ArrayList;
 import java.util.TreeMap;
 
 // 'abstract' 키워드를 사용하여 추상 클래스로 선언

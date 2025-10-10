@@ -1,4 +1,4 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.communication;
 
 import java.io.Serializable;
 
@@ -6,12 +6,12 @@ public class LoginResponse implements Serializable {
     private boolean success;
     private String username;
 
-    LoginResponse(boolean success, String id){
+    public LoginResponse(boolean success, String id){
         this.success = success;
         this.username = id;
     }
 
-    public boolean isSuccesss(){
+    public boolean isSuccess(){
         return success;
     }
 

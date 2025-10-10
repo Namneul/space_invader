@@ -1,5 +1,7 @@
 package org.newdawn.spaceinvaders;
 
+import org.newdawn.spaceinvaders.multiplay.RankData;
+
 import javax.swing.*;
 import java.awt.*;
 import java.sql.ResultSet;
@@ -9,23 +11,16 @@ import java.util.ArrayList;
 public class RankBoard {
     JFrame frame;
     JPanel panel;
-    ResultSet rs;
-     public RankBoard(ResultSet rs) throws SQLException {
-         this.rs = rs;
+     public RankBoard(ArrayList<RankData> ranking) throws SQLException {
          frame = new JFrame("Rank Board");
          frame.setPreferredSize(new Dimension(800,600));
          frame.setLayout(null);
 
-         ArrayList<String[]> data = new ArrayList<>();
-         while(rs.next()) {
-             String name = rs.getString(1);
-             int score = rs.getInt(2);
-             data.add(new String[]{name, String.valueOf(score)});
-         }
-
-         String[][] scores = new String[data.size()][2];
-         for(int i = 0; i < data.size(); i++) {
-             scores[i] = data.get(i);
+         String[][] scores = new String[ranking.size()][2];
+         for(int i = 0; i < ranking.size(); i++) {
+             RankData rank = ranking.get(i);
+             scores[i][0] = rank.getUsername();
+             scores[i][1] = String.valueOf(rank.getScore());
          }
 
          String[] header = {"Name", "Score"};

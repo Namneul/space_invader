@@ -1,6 +1,5 @@
 package org.newdawn.spaceinvaders.multiplay;
 
-import com.sun.source.tree.Tree;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -21,13 +20,16 @@ public class Server implements Runnable{
     private final ArrayList<ClientHandler> clientHandlers;
     protected Map<Integer, PlayerData> playerDataMap = new ConcurrentHashMap<>();
     private Login loginHost;
+    private final int maxPlayers;
+    private boolean gameStarted = false;
 
-
-    public Server(int port){
+    public Server(int port, int maxPlayers){
         this.serverGame = new ServerGame(this);
         this.loginHost = new Login();
+        this.maxPlayers = maxPlayers;
         try {
             this.serverSocket = new ServerSocket(port);
+            System.out.println("Server started on port: "+port+" for "+maxPlayers);
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -36,24 +38,28 @@ public class Server implements Runnable{
 
     @Override
     public void run() {
-        new Thread(() -> startAcceptClientsLoop()).start();
-        new Thread(() -> startGameloop()).start();
+        startAcceptClientsLoop();
     }
 
     private void startAcceptClientsLoop() {
-        System.out.println("Accepting Clients.");
-        while (true) {
-            System.out.println("Waiting for new client.");
+        System.out.println("Accepting Clients. Need "+maxPlayers+" players.");
+        while (clientHandlers.size() < this.maxPlayers) {
             try {
                 final Socket socket = serverSocket.accept();
-                System.out.println("A new client has connected.");
+                System.out.println("A new client has connected. Players: "+clientHandlers.size()+1);
                 final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, serverGame.spawnPlayerEntity(), loginHost);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
+                if (clientHandlers.size() == 1){
+                    System.out.println("Waiting for 2P");
+                }
             } catch (final IOException e) {
                 e.printStackTrace();
             }
         }
+        System.out.println("Two players connected. Game start!");
+        this.gameStarted = true;
+        new Thread(() -> startGameloop()).start();
     }
 
     private void startGameloop() {
@@ -95,7 +101,19 @@ public class Server implements Runnable{
 
     public static void main(String[] args) throws IOException {
 
-        Server server = new Server(DEFAULT_PORT_NUMBER);
+        int port = DEFAULT_PORT_NUMBER;
+        int players = 2;
+        if (args.length > 0){
+            try {
+                port = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid port number");
+            }
+        }
+        if (args.length > 1 && args[1].equalsIgnoreCase("single")){
+            players = 1;
+        }
+        Server server = new Server(port, players);
         server.run();
     }
 }

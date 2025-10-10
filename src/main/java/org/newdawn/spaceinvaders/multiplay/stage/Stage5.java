@@ -1,8 +1,5 @@
 package org.newdawn.spaceinvaders.multiplay.stage;
 
-import org.newdawn.spaceinvaders.Game;
-import org.newdawn.spaceinvaders.entity.AlienEntity;
-import org.newdawn.spaceinvaders.entity.Entity;
 import org.newdawn.spaceinvaders.multiplay.ServerAlienEntity;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 

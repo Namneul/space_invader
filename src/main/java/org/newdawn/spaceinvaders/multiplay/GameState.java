@@ -25,7 +25,7 @@ public class GameState implements Serializable {
     public int getCurrentScore(){
         return currentScore;
     }
-    public int getReamainingLives(){
+    public int getRemainingLives(){
         return remainingLives;
     }
     public GameStatus getStatus(){

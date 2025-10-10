@@ -1,4 +1,4 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.communication;
 
 import java.io.Serializable;
 

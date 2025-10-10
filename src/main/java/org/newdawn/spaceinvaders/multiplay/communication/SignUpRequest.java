@@ -1,12 +1,12 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.communication;
 
 import java.io.Serializable;
 
-public class LoginRequest implements Serializable {
+public class SignUpRequest implements Serializable {
     private String username;
     private String password;
 
-    public LoginRequest(String id, String pw){
+    public SignUpRequest(String id, String pw){
         this.username = id;
         this.password = pw;
     }
@@ -19,4 +19,3 @@ public class LoginRequest implements Serializable {
         return password;
     }
 }
-

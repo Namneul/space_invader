@@ -1,5 +1,7 @@
 package org.newdawn.spaceinvaders.multiplay;
 
+import org.newdawn.spaceinvaders.multiplay.communication.*;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -53,8 +55,11 @@ public class ClientHandler implements Runnable {
                         server.getPlayerDataMap().put(this.playershipId, playerData);
                     }
                     String message = success ? "Sgin up sccessful!" :"Username already exist";
-                    SignUpResponse resonse = new SignUpResponse(success, message);
-                    outputStream.writeObject(resonse);
+                    SignUpResponse response = new SignUpResponse(success, message);
+                    outputStream.writeObject(response);
+                } else if (receivedInput instanceof RankRequest) {
+                    RankResponse response = new RankResponse(loginHost.getAllScore());
+                    outputStream.writeObject(response);
                 } else{
                 serverGame.processPlayerInput(this.playershipId, (PlayerInput) receivedInput);
                 }

@@ -1,12 +1,21 @@
 package org.newdawn.spaceinvaders;
 
+import org.newdawn.spaceinvaders.multiplay.communication.RankRequest;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.sql.SQLException;
 
 public class ButtonController {
+    private Game game;
+
+    public ButtonController(Game game){
+        this.game = game;
+    }
+
     public void pressLoginBtn(LoginFrame loginFrame,JPanel panel, JFrame frame) {
         if (loginFrame.loginStatus) {
             JOptionPane.showMessageDialog(panel, "Already login");
@@ -32,6 +41,12 @@ public class ButtonController {
     }
 
     public void pressRankBtn(LoginFrame loginFrame) throws SQLException {
-        RankBoard rb = new RankBoard(loginFrame.login.getAllScore());
+
+        try {
+            RankRequest request = new RankRequest();
+            game.getOutputStream().writeObject(request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

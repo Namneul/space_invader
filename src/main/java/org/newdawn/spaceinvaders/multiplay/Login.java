@@ -1,6 +1,8 @@
 package org.newdawn.spaceinvaders.multiplay;
 import java.io.Serializable;
 import java.sql.*;
+import java.util.ArrayList;
+
 public class Login {
     private final String dbUrl = "jdbc:mysql://34.47.73.59:3306/spaceinvader";
     private final String dbUser = "remoteuser";
@@ -102,15 +104,22 @@ public class Login {
         }
     }
 
-    public ResultSet getAllScore() {
+    public ArrayList<RankData> getAllScore() {
+        ArrayList<RankData> ranking = new ArrayList<>();
         String sql = "select * from ScoreBoard ORDER BY Score DESC";
         try{
             psmt = con.prepareStatement(sql);
             ResultSet rs = psmt.executeQuery();
-            return rs;
+
+            while (rs.next()){
+                String username = rs.getString(1);
+                int score = rs.getInt(2);
+                ranking.add(new RankData(username, score));
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return ranking;
     }
 }
 

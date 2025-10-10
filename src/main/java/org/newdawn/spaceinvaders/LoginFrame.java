@@ -1,8 +1,8 @@
 package org.newdawn.spaceinvaders;
 
 import org.newdawn.spaceinvaders.multiplay.Login;
-import org.newdawn.spaceinvaders.multiplay.LoginRequest;
-import org.newdawn.spaceinvaders.multiplay.SignUpRequest;
+import org.newdawn.spaceinvaders.multiplay.communication.LoginRequest;
+import org.newdawn.spaceinvaders.multiplay.communication.SignUpRequest;
 
 import javax.swing.*;
 import java.awt.*;

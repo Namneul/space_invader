@@ -1,18 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay;
 
-
-import org.newdawn.spaceinvaders.Game;
 import org.newdawn.spaceinvaders.LoginFrame;
-import org.newdawn.spaceinvaders.SystemTimer;
 import org.newdawn.spaceinvaders.multiplay.stage.*;
-
 import java.awt.*;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class ServerGame {
 
@@ -20,42 +13,15 @@ public class ServerGame {
 
     private int alienCount;
 
-    private boolean waitingForKeyPress = true;
-    /** True if the left cursor key is currently pressed */
-    private boolean leftPressed = false;
-    /** True if the right cursor key is currently pressed */
-    private boolean rightPressed = false;
-    /** True if we are firing */
-    private boolean firePressed = false;
-    /** True if game logic needs to be applied this loop, normally as a result of a game event */
-    private boolean logicRequiredThisLoop = false;
-
-    private int playerLives;
-
-    private final int MAX_LIVES = 3;
-
-    private int currentStageIndex;          // 현재 스테이지 인덱스
+    private int currentStageIndex;  // 현재 스테이지 인덱스
 
     private Stage currentStage;
 
     public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
 
-    private Game.GameMode currentMode = Game.GameMode.MAIN_MENU;
-
-
-    private long serverFrame = 0;
-
-    private final int WORLD_WIDTH = 800;
-
-    private final int WORLD_HEIGHT = 600;
-
-    private TreeMap<Integer, Integer> playerAndShipId;
-
     private boolean logicUpdateRequested = false;
 
     private ArrayList<Integer> removeList = new ArrayList<>();
-
-    private boolean gameRunning = true;
 
     private Server server;
 

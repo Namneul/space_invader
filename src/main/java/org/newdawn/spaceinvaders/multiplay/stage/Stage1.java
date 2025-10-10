@@ -1,13 +1,7 @@
 package org.newdawn.spaceinvaders.multiplay.stage;
 
-import com.sun.source.tree.Tree;
-import org.newdawn.spaceinvaders.Game;
-import org.newdawn.spaceinvaders.entity.AlienEntity;
-import org.newdawn.spaceinvaders.entity.Entity;
 import org.newdawn.spaceinvaders.multiplay.ServerAlienEntity;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
-
-import java.util.ArrayList;
 import java.util.TreeMap;
 
 public class Stage1 extends Stage {

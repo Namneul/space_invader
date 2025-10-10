@@ -1,6 +1,5 @@
 package org.newdawn.spaceinvaders.multiplay;
 
-import org.newdawn.spaceinvaders.entity.AlienEntity;
 
 public class ServerPlayerShipEntity extends ServerGame.Entity {
 
@@ -43,7 +42,7 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
     @Override
     public void handleCollision(ServerGame.Entity otherEntity) {
         if (otherEntity instanceof ServerAlienShotEntity || otherEntity instanceof ServerAlienEntity){
-            game.notifyDeath();
+            game.notifyDeath(this.getId());
             resetUpgrade();
         }
 
