@@ -119,6 +119,11 @@ public class AlienEntity extends Entity {
 	private int maxHP = 200;
 	private int currentHP = 200;
 
+	public void setHP(int hp){
+		maxHP = hp;
+		currentHP = hp;
+	}
+
 	@Override
 	public void draw(Graphics g) {
 		super.draw(g);
