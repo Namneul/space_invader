@@ -3,6 +3,8 @@ package org.newdawn.spaceinvaders;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class LoginFrame {
     JFrame frame;
@@ -20,8 +22,11 @@ public class LoginFrame {
 
     public void startlogin() {
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
-        ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("signInBtn.png"));
-        ImageIcon signupIcon = new ImageIcon(getClass().getClassLoader().getResource("signUpBtn.png"));
+        ImageIcon signInIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signInBtn.png"));
+        ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
+        ImageIcon signInIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signInBtn_hover.png"));
+        ImageIcon signUpIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+
         frame = new JFrame("로그인");
         this.signinPanel = new JPanel(){
             @Override
@@ -33,18 +38,42 @@ public class LoginFrame {
         signinPanel.setPreferredSize(new Dimension(800,600));
         signinPanel.setLayout(null);
 
-        signupButton = new JButton(signupIcon);
+        signupButton = new JButton(signUpIcon);
         signupButton.setBounds(300,444,200,50);
         signupButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
         signupButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
         signupButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        signupButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                signupButton.setIcon(signUpIcon_hover);
+            }
 
-        loginButton = new JButton(loginIcon);
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                signupButton.setIcon(signUpIcon);
+            }
+        });
+        loginButton = new JButton(signInIcon);
         loginButton.setBounds(300,377,200,50);
         loginButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
         loginButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
         loginButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        loginButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                loginButton.setIcon(signInIcon_hover);
+            }
 
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                loginButton.setIcon(signInIcon);
+            }
+        });
         userId = new JTextField(10);
         userId.setBounds(300,222,200,50);
         userId.setOpaque(false); // 1. 배경을 투명하게 설정
@@ -76,8 +105,10 @@ public class LoginFrame {
 
     }
     public void signUp(){
-        ImageIcon signupIcon = new ImageIcon(getClass().getClassLoader().getResource("signUpBtn.png"));
-        ImageIcon backIcon = new ImageIcon(getClass().getClassLoader().getResource("backBtn.png"));
+        ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
+        ImageIcon backIcon = new ImageIcon(getClass().getClassLoader().getResource("button/backBtn.png"));
+        ImageIcon signUpIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+        ImageIcon backIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/backBtn_hover.png"));
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
         signupPanel = new JPanel(){
             @Override
@@ -89,18 +120,42 @@ public class LoginFrame {
         signupPanel.setPreferredSize(new Dimension(800,600));
         signupPanel.setLayout(null);
 
-        JButton SUbtn = new JButton(signupIcon);
+        JButton SUbtn = new JButton(signUpIcon);
         SUbtn.setBounds(300,377,200,50);
         SUbtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
         SUbtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
         SUbtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        SUbtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                SUbtn.setIcon(signUpIcon_hover);
+            }
 
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                SUbtn.setIcon(signUpIcon);
+            }
+        });
         JButton backBtn = new JButton(backIcon);
         backBtn.setBounds(300,444,200,50);
         backBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
         backBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
         backBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        backBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                backBtn.setIcon(backIcon_hover);
+            }
 
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                backBtn.setIcon(backIcon);
+            }
+        });
         JTextField username = new JTextField(10);
         username.setBounds(300,222,200,50);
         username.setOpaque(false); // 1. 배경을 투명하게 설정
