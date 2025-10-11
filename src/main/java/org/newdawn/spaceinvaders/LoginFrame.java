@@ -80,45 +80,14 @@ public class LoginFrame {
 
         SUbtn.addActionListener(e->{
 
-            if (game.getOutputStream() == null){
-                JOptionPane.showMessageDialog(frame, "서버 연결 안됨");
-                return;
-            }
-            SignUpRequest request = new SignUpRequest(username.getText(), password.getText());
-            try {
-                game.getOutputStream().writeObject(request);
-                game.getOutputStream().reset();
-                game.getOutputStream().flush();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-
+            game.performLoginOrSignUp(new SignUpRequest(username.getText(), password.getText()));
         });
     }
 
     public void AuthLogin(){
         loginButton.addActionListener(e -> {
 
-            if (game.getOutputStream() == null){
-                JOptionPane.showMessageDialog(frame, "서버 연결 안됨");
-                return;
-            }
-
-            user  = new User();
-            user.Id = userId.getText();
-            user.Password = password.getText();
-
-            boolean ok = game.sendToServer(new LoginRequest(user.Id, user.Password));
-            if (!ok) JOptionPane.showMessageDialog(frame,"서버 연결 전이거나 전송 실패.");
-            LoginRequest request = new LoginRequest(user.Id, user.Password);
-            try {
-                game.getOutputStream().writeObject(request);
-                game.getOutputStream().reset();
-                game.getOutputStream().flush();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-
+            game.performLoginOrSignUp(new LoginRequest(userId.getText(), new String(password.getPassword())));
         });
     }
 }

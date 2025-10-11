@@ -3,6 +3,7 @@ package org.newdawn.spaceinvaders;
 import org.newdawn.spaceinvaders.multiplay.*;
 import org.newdawn.spaceinvaders.multiplay.communication.LoginResponse;
 import org.newdawn.spaceinvaders.multiplay.communication.RankRequest;
+import org.newdawn.spaceinvaders.multiplay.communication.RankResponse;
 import org.newdawn.spaceinvaders.multiplay.communication.SignUpResponse;
 
 import javax.swing.*;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.TreeMap;
 
 /**
@@ -59,10 +61,12 @@ public class Game extends Canvas {
 
     // 게임 상태 변수
     private volatile boolean isGameLoopRunning = false;
+    private volatile boolean isConnecting = false;
     private volatile GameState currentGameState; // 서버가 보내주는 최신 게임 상태
     private final int MAX_LIVES = 3; // UI 그리기를 위한 상수
 
     private LoginFrame loginFrame;
+    private Process singlePlayServerProcess;
 
 
     public Game() {
@@ -80,6 +84,7 @@ public class Game extends Canvas {
         container.setVisible(true);
         container.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
+                if (singlePlayServerProcess != null) singlePlayServerProcess.destroy();
                 System.exit(0);
             }
         });
@@ -134,6 +139,7 @@ public class Game extends Canvas {
 
                 startMultiplay(serverAdress, port);
                 isGameLoopRunning = true;
+                isConnecting = false;
                 gameLoop();
             } catch (IOException e) {
                 SwingUtilities.invokeLater(() -> {
@@ -141,6 +147,7 @@ public class Game extends Canvas {
                     mainMenu();
                 });
                 isGameLoopRunning =false;
+                isConnecting = false;
             }
         }).start();
 
@@ -213,7 +220,12 @@ public class Game extends Canvas {
                     heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
                 }
                 if (currentGameState.getRemainingLives() <= 0){
-
+                    isGameLoopRunning =  false;
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(container, "GAME OVER");
+                        mainMenu();
+                    });
+                    return;
                 }
             }
 
@@ -293,14 +305,11 @@ public class Game extends Canvas {
 
 
     public void mainMenu() {
-        new Thread(() -> {
-            try {
-                startMultiplay("localhost", 12345);
-                System.out.println("서버 자동 연결 성공!");
-            } catch (IOException e){
-                System.out.println("서버 미연결 상태. Online 상태에서 재시도 하세요.");
-            }
-        }).start();
+        if (this.singlePlayServerProcess != null) {
+            this.singlePlayServerProcess.destroy(); // 실행 중인 싱글플레이 서버 종료
+            this.singlePlayServerProcess = null;
+        }
+            disconnectIfConnected();
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -334,119 +343,102 @@ public class Game extends Canvas {
         container.revalidate();
         container.repaint();
 
+
         menuButtons[0].addActionListener(e -> { // SinglePlay 버튼
-            if (isGameLoopRunning) return;
+            if (isGameLoopRunning || isConnecting) return;
+            isConnecting = true;
 
-            container.setContentPane(gamePanel);
-            container.revalidate();
-            container.repaint();
-            requestFocusInWindow();
-
-            // --- 2. 서버 실행 및 접속 (백그라운드 스레드) ---
             new Thread(() -> {
-                // 2-1. 서버 프로세스 시작
-                Process serverProcess;
                 try {
                     ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", "target/classes", "org.newdawn.spaceinvaders.multiplay.Server", "1234", "single");
+                    pb.redirectErrorStream(true); // 에러 출력을 표준 출력으로 합쳐서 보기 편하게 함
                     pb.directory(new File("."));
-                    serverProcess = pb.start();
+                    this.singlePlayServerProcess = pb.start();
+                    System.out.println("--- 로컬 서버 프로세스 시작됨 ---");
+
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(singlePlayServerProcess.getInputStream()))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            System.out.println("[Local Server]: " + line);
+                        }
+                    }
+                    System.out.println("--- 로컬 서버 프로세스 종료됨 ---");
+
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(container, "Could not start local server process.");
+                        JOptionPane.showMessageDialog(container, "로컬 서버 실행 실패: " + ex.getMessage());
                         mainMenu();
                     });
+                } finally {
+                    isConnecting = false;
+                }
+            }, "local-server-runner").start();
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
                     return;
                 }
+                startGame("localhost", 1234);
+            }, "client-connect-starter").start();
 
-                // 2-2. '소켓 연결'만 성공할 때까지 재시도
-                Socket tempSocket = null;
-                for (int i = 0; i < 25; i++) { // 최대 5초
-                    try {
-                        tempSocket = new Socket("localhost", 1234);
-                        break; // 소켓 연결 성공! 루프 탈출.
-                    } catch (IOException ex) {
-                        try { Thread.sleep(200); } catch (InterruptedException ignored) {}
-                    }
-                }
+        });
 
-                // 2-3. 최종 결과 처리
-                if (tempSocket != null) {
-                    // 소켓 연결에 최종 성공했을 경우
-                    try {
-                        // 성공한 소켓을 사용해 스트림을 만들고 리스너를 시작
-                        this.socket = tempSocket;
-                        this.outputStream = new ObjectOutputStream(socket.getOutputStream());
-                        this.outputStream.flush();
-                        this.inputStream = new ObjectInputStream(socket.getInputStream());
+        menuButtons[1].addActionListener(e -> {
+            String host = "localhost";
+            int port = 12345;
+            loginFrame = new LoginFrame(this);
+            loginFrame.startlogin();
+        });
 
-                        // startMultiplay에 있던 리스너 스레드를 여기에 직접 생성
-                        Thread listenerThread = new Thread(() -> {
-                            while (socket.isConnected()) {
-                                try {
-                                    Object response = inputStream.readObject();
-                                    if (response instanceof GameState){
-                                        currentGameState = (GameState) response;
-                                    } // ... (이하 다른 Response 처리 로직)
-                                } catch (Exception ex) {
-                                    break;
-                                }
-                            }
-                        });
-                        listenerThread.start();
-
-                        // 모든 준비가 끝났으니 게임 루프 시작
-                        isGameLoopRunning = true;
-                        gameLoop();
-
-                    } catch (IOException ex) {
-                        // 스트림 생성 실패 시 처리
+        menuButtons[2].addActionListener(e -> {
+            String host = "localhost";
+            int port = 12345;
+            new Thread(() -> {
+                try {
+                    // 로그인/랭킹 전용 임시 연결 및 요청 전송
+                    Object response = sendRequestWithTempConnection(host, port, new RankRequest());
+                    if (response instanceof RankResponse) {
+                        RankResponse res = (RankResponse) response;
                         SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(container, "Failed to establish stream with server.");
-                            mainMenu();
+                            try { new RankBoard(res.getRanking()); }
+                            catch (Exception ex) { JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다."); }
                         });
-                        serverProcess.destroy();
                     }
-                } else {
-                    // 소켓 연결에 최종 실패했을 경우
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(container, "Failed to connect to the local server.");
-                        mainMenu();
-                    });
-                    serverProcess.destroy();
+                } catch (IOException | ClassNotFoundException ex) {
+                    SwingUtilities.invokeLater(()-> JOptionPane.showMessageDialog(container, "서버 통신 오류: " + ex.getMessage()));
                 }
             }).start();
         });
 
-        menuButtons[1].addActionListener(e -> {
-            loginFrame = new LoginFrame(this);
-            loginFrame.startlogin();
-
-        });
-
-        menuButtons[2].addActionListener(e -> {
-            try {
-                if (outputStream != null){
-                    outputStream.writeObject(new RankRequest());
-                    outputStream.reset();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
         menuButtons[3].addActionListener(e -> {
+            if (isConnecting || isGameLoopRunning) return;
+            isConnecting = true;
+
             String ip = JOptionPane.showInputDialog("Enter Server Ip: ", "localhost");
-            if (ip == null && ip.trim().isEmpty()){
+            if (ip == null || ip.trim().isEmpty()){
+                isConnecting = false;
                 return;
             }
 
-            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number");
+            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number","12345");
             if (portStr == null || portStr.trim().isEmpty()){
+                isConnecting = false;
                 return;
             }
-
             try {
                 int port = Integer.parseInt(portStr);
+                disconnectIfConnected();
                 startGame(ip, port);
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ex) {}
+                    sendToServer(new PlayerInput(PlayerInput.Action.STOP));
+                }, "join-signal").start();
+
             } catch (NumberFormatException ex) {
                 throw new RuntimeException(ex);
             }
@@ -456,31 +448,55 @@ public class Game extends Canvas {
 
     public void startMultiplay(String address, int port) throws IOException {
         socket = new Socket(address, port);
+        socket.setTcpNoDelay(true);
+
+        // 스트림 생성 순서 + flush
         outputStream = new ObjectOutputStream(socket.getOutputStream());
-        inputStream = new ObjectInputStream(socket.getInputStream());
+        outputStream.flush();
+        inputStream  = new ObjectInputStream(socket.getInputStream());
 
-        Thread ListenForServerUpdates = new Thread() {
-            public void run() {
-                while (socket.isConnected()) {
-                    try {
-                        Object response = inputStream.readObject();
+        Thread listener = new Thread(() -> {
+            final Socket s = socket;
+            final ObjectInputStream in = inputStream;
+            try {
+                System.out.println("[클라이언트 로그] 서버로부터 메시지 수신 대기 시작.");
+                while (!Thread.currentThread().isInterrupted()
+                        && s != null && !s.isClosed()) {
+                    Object msg = in.readObject();
+                    System.out.println("[클라이언트 로그] 서버로부터 메시지 수신: " + msg.getClass().getSimpleName());
 
-                        if (response instanceof GameState){
-                            currentGameState = (GameState) response;
-                        } else if (response instanceof LoginResponse) {
-                            handleLoginResponse((LoginResponse) response);
-                        } else if (response instanceof SignUpResponse) {
-                            handleSignupResponse((SignUpResponse) response);
-                        }
-                    } catch (Exception exception) {
-                        System.out.println("server lost");
-                        break;
+                    if (msg instanceof GameState) {
+                        currentGameState = (GameState) msg;
+                    } else if (msg instanceof LoginResponse) {
+                        handleLoginResponse((LoginResponse) msg);
+                    } else if (msg instanceof SignUpResponse) {
+                        handleSignupResponse((SignUpResponse) msg);
+                    } else if (msg instanceof RankResponse) {
+                        RankResponse res = (RankResponse) msg;
+                        SwingUtilities.invokeLater(() -> {
+                            try { new RankBoard(res.getRanking()); }
+                            catch (Exception e) { JOptionPane.showMessageDialog(container, "can't show RankBoard"); }
+                        });
                     }
                 }
+            } catch (Exception ex) {
+
+            } finally {
+                disconnectIfConnected();
+                isGameLoopRunning = false;
+                isConnecting = false;
+
+                SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(container, "서버 끊김");
+                        isGameLoopRunning = false;
+                        mainMenu();
+                });
             }
-        };
-        ListenForServerUpdates.start();
+        }, "server-listener");
+        listener.setDaemon(true);
+        listener.start();
     }
+
 
     private void handleLoginResponse(LoginResponse res){
         SwingUtilities.invokeLater(() ->{
@@ -505,6 +521,23 @@ public class Game extends Canvas {
         });
     }
 
+    private final Object connLock = new Object();
+
+    private void disconnectIfConnected() {
+        synchronized (connLock) {
+            try { if (inputStream != null)  inputStream.close(); } catch (IOException ignored) {}
+            try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) {}
+            try { if (socket != null)       socket.close(); }      catch (IOException ignored) {}
+            inputStream = null; outputStream = null; socket = null;
+        }
+    }
+
+    private boolean isConnected() {
+        synchronized (connLock) {
+            return socket != null && socket.isConnected() && !socket.isClosed();
+        }
+    }
+
 
     public synchronized boolean sendToServer(Object object){
         if (outputStream == null) return false;
@@ -518,6 +551,36 @@ public class Game extends Canvas {
         }
     }
 
+
+    private Object sendRequestWithTempConnection(String host, int port, Object request) throws IOException, ClassNotFoundException {
+        try (Socket tempSocket = new Socket(host, port);
+             ObjectOutputStream tempOut = new ObjectOutputStream(tempSocket.getOutputStream())) {
+
+            tempOut.writeObject(request);
+            tempOut.flush();
+
+            try (ObjectInputStream tempIn = new ObjectInputStream(tempSocket.getInputStream())) {
+                return tempIn.readObject();
+            }
+        }
+    }
+
+    public void performLoginOrSignUp(Object request) {
+        String host = "localhost";
+        int port = 12345;
+        new Thread(() -> {
+            try {
+                Object response = sendRequestWithTempConnection(host, port, request);
+                if (response instanceof LoginResponse) {
+                    handleLoginResponse((LoginResponse) response);
+                } else if (response instanceof SignUpResponse) {
+                    handleSignupResponse((SignUpResponse) response);
+                }
+            } catch (IOException | ClassNotFoundException ex) {
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "서버 통신 오류: " + ex.getMessage()));
+            }
+        }).start();
+    }
 
     @Override
     public void addNotify(){
