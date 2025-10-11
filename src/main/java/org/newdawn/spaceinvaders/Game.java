@@ -343,8 +343,8 @@ public class Game extends Canvas
      */
     private void loadStages() {
         stages = new ArrayList<>();
-        stages.add(new Stage1());
-        stages.add(new Stage2());
+//        stages.add(new Stage1());
+//        stages.add(new Stage2());
         stages.add(new Stage3());
         stages.add(new Stage4());
         stages.add(new Stage5());
@@ -461,7 +461,12 @@ public class Game extends Canvas
                 if (logicRequiredThisLoop) {
                     for (int i=0;i<entities.size();i++) {
                         Entity entity = (Entity) entities.get(i);
-                        entity.doLogic();
+                        if(entity instanceof ReflectAlienEntity) {
+
+                        }else{
+                            entity.doLogic();
+                        }
+
                     }
 
                     logicRequiredThisLoop = false;

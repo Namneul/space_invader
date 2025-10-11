@@ -70,5 +70,10 @@ public class ShotEntity extends Entity {
 			((AlienEntity) other).healthdamage(damage);
 			used = true;
 		}
+
+		if (other instanceof ReflectAlienEntity) {
+			game.removeEntity(this);
+			game.notifyDeath();
+		}
 	}
 }

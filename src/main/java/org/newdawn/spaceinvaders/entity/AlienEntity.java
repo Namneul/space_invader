@@ -24,7 +24,10 @@ public class AlienEntity extends Entity {
 	private long frameDuration = 250;
 	/** The current frame of animation being displayed */
 	private int frameNumber;
-	
+
+	private boolean attackStatus = true;
+
+
 	/**
 	 * Create a new alien entity
 	 * 
@@ -50,6 +53,7 @@ public class AlienEntity extends Entity {
 	 * 
 	 * @param delta The time that has elapsed since last move
 	 */
+
 	public void move(long delta) {
 		// since the move tells us how much time has passed
 		// by we can use it to drive the animation, however
@@ -70,9 +74,10 @@ public class AlienEntity extends Entity {
 			
 			sprite = frames[frameNumber];
 		}
-
-		if (Math.random() < 0.001) {
-			game.alienFires(this);
+		if(attackStatus==true){
+			if (Math.random() < 0.001) {
+				game.alienFires(this);
+			}
 		}
 		
 		// if we have reached the left hand side of the screen and
@@ -105,7 +110,10 @@ public class AlienEntity extends Entity {
 			game.notifyDeath();
 		}
 	}
-	
+
+	public void setAttackStatus(boolean status) {
+		attackStatus = status;
+	}
 	/**
 	 * Notification that this alien has collided with another entity
 	 * 

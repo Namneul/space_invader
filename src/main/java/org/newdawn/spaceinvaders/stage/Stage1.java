@@ -14,6 +14,7 @@ public class Stage1 extends Stage {
             for (int x = 0; x < 10; x++) {
                 Entity alien = new AlienEntity(game, 100 + (x * 50), 50 + row * 30);
                 ((AlienEntity)alien).setHP(50);
+                ((AlienEntity)alien).setAttackStatus(false);
                 alien.setHorizontalMovement(75); // 느린 속도
                 entities.add(alien);
                 alienCount++;
