@@ -88,6 +88,7 @@ public class Game extends Canvas
     private Sprite redHeartSprite;
     private Sprite greyHeartSprite;
     private Sprite mainBackground;
+    private Sprite gameBackground;
     private final int MAX_LIVES = 3;
     private ArrayList<Stage> stages;      // 스테이지 목록
     private int currentStageIndex;          // 현재 스테이지 인덱스
@@ -100,6 +101,9 @@ public class Game extends Canvas
     LoginFrame loginFrame = new LoginFrame();
     private JPanel mainPanel;
 
+    private boolean isPaused = false;
+    private final Rectangle resumeButtonBounds = new Rectangle(300, 280, 200, 50);
+    private final Rectangle mainMenuButtonBounds = new Rectangle(300, 350, 200, 50);
 
     private Image mainImage;
 
@@ -154,7 +158,7 @@ public class Game extends Canvas
 //		createBufferStrategy(2);
 //		strategy = getBufferStrategy();
         //메인 화면 생성으로 인한 패널 전환으로 새로운 메소드로 분리
-
+        addMouseListener(new MouseInputHandler());
 
         // initialise the entities in our game so there's something
         // to see at startup
@@ -162,6 +166,8 @@ public class Game extends Canvas
         redHeartSprite = SpriteStore.get().getSprite("sprites/heart_red.png");
         greyHeartSprite = SpriteStore.get().getSprite("sprites/heart_grey.png");
         mainBackground = SpriteStore.get().getSprite("mainBackground.png");
+        gameBackground = SpriteStore.get().getSprite("gameBackground.png");
+
         this.alienSprite = SpriteStore.get().getSprite("sprites/alien.gif");
         this.shotSprite = SpriteStore.get().getSprite("sprites/shots/shot0.png");
     }
@@ -355,27 +361,18 @@ public class Game extends Canvas
     }
 
     public void gameLoop() {
-        long lastLoopTime = SystemTimer.getTime();
-        JFrame frame = new JFrame("Space Invaders");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    long lastLoopTime = SystemTimer.getTime();
 
-        // keep looping round til the game ends
-        while (gameRunning) {
+    // keep looping round til the game ends
+    while (gameRunning) {
+        // work out how long its been since the last update, this
+        // will be used to calculate how far the entities should
+        // move this loop
+        long delta = SystemTimer.getTime() - lastLoopTime;
+        lastLoopTime = SystemTimer.getTime();
 
-            while (strategy == null) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            // work out how long its been since the last update, this
-            // will be used to calculate how far the entities should
-            // move this loop
-            long delta = SystemTimer.getTime() - lastLoopTime;
-            lastLoopTime = SystemTimer.getTime();
-
+        // [수정] 일시정지 상태가 아닐 때만 모든 게임 로직을 업데이트합니다.
+        if (!isPaused) {
             // update the frame counter
             lastFpsTime += delta;
             fps++;
@@ -383,57 +380,27 @@ public class Game extends Canvas
             // update our FPS counter if a second has passed since
             // we last recorded
             if (lastFpsTime >= 1000) {
-                container.setTitle(windowTitle+" (FPS: "+fps+")");
+                container.setTitle(windowTitle + " (FPS: " + fps + ")");
                 lastFpsTime = 0;
                 fps = 0;
             }
 
-            // Get hold of a graphics context for the accelerated
-            // surface and blank it out
-            Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-            g.setColor(Color.black);
-            g.fillRect(0,0,800,600); // 배경 색
-            if (waitingForKeyPress) {
-                g.setColor(Color.white);
-
-
-                g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
-                g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
-            }
-
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Serif", Font.BOLD, 20));
-            g.drawString("Score: " + loginFrame.user.Score, 650, 580);
-            for (int i = 0; i < MAX_LIVES; i++) {
-                Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
-                heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
-            }
-
-
             // finally, we've completed drawing so clear up the graphics
             // and flip the buffer over
-            if (currentMode == GameMode.SINGLEPLAY){
+            if (currentMode == GameMode.SINGLEPLAY) {
                 // cycle round asking each entity to move itself
                 if (!waitingForKeyPress) {
-                    for (int i=0;i<entities.size();i++) {
+                    for (int i = 0; i < entities.size(); i++) {
                         Entity entity = (Entity) entities.get(i);
-
                         entity.move(delta);
                     }
-                }
-
-                // cycle round drawing all the entities we have in the game
-                for (int i=0;i<entities.size();i++) {
-                    Entity entity = (Entity) entities.get(i);
-
-                    entity.draw(g);
                 }
 
                 // brute force collisions, compare every entity against
                 // every other entity. If any of them collide notify
                 // both entities that the collision has occured
-                for (int p=0;p<entities.size();p++) {
-                    for (int s=p+1;s<entities.size();s++) {
+                for (int p = 0; p < entities.size(); p++) {
+                    for (int s = p + 1; s < entities.size(); s++) {
                         Entity me = (Entity) entities.get(p);
                         Entity him = (Entity) entities.get(s);
 
@@ -444,10 +411,6 @@ public class Game extends Canvas
                     }
                 }
 
-                for (int i = 0; i < MAX_LIVES; i++) {
-                    Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
-                    heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
-                }
                 // remove any entity that has been marked for clear up
                 entities.removeAll(removeList);
                 removeList.clear();
@@ -456,23 +419,16 @@ public class Game extends Canvas
                 // be resolved, cycle round every entity requesting that
                 // their personal logic should be considered.
                 if (logicRequiredThisLoop) {
-                    for (int i=0;i<entities.size();i++) {
+                    for (int i = 0; i < entities.size(); i++) {
                         Entity entity = (Entity) entities.get(i);
-                        if(entity instanceof ReflectAlienEntity) {
+                        if (entity instanceof ReflectAlienEntity) {
 
                         }else{
                             entity.doLogic();
                         }
-
                     }
-
                     logicRequiredThisLoop = false;
                 }
-
-
-                // if we're waiting for an "any key" press then draw the
-                // current message
-
 
                 // resolve the movement of the ship. First assume the ship
                 // isn't moving. If either cursor key is pressed then
@@ -485,56 +441,113 @@ public class Game extends Canvas
                     ship.setHorizontalMovement(moveSpeed);
                 }
 
-                // if we're pressing fire, attempt to fire
                 if (firePressed) {
                     tryToFire();
                 }
-
-                // we want each frame to take 10 milliseconds, to do this
-                // we've recorded when we started the frame. We add 10 milliseconds
-                // to this and then factor in the current time to give
-                // us our final value to wait for
             }
-            else if (currentMode == GameMode.MULTIPLAY) {
+        }
 
-                if (networkEntities != null){
 
-                    for (ServerGame.Entity entity: networkEntities.values()){
-//                     System.out.println("Drawing: " + entity.getType() + " at X="+entity.getX() + ", Y=" + entity.getY());
-                        Sprite spriteToDraw = null;
-                        switch (entity.getType()){
-                            case PLAYER:
-                                spriteToDraw = this.ship.getSprite();
-                                break;
-                            case SHOT:
-                                spriteToDraw = this.shotSprite;
-                                break;
-                            case ALIEN:
-                                spriteToDraw = this.alienSprite;
-                                break;
-                        }
-                        if (spriteToDraw != null){
-                            spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
+        if (!gameRunning) {
+            break;
+        }
 
-                        }
+        Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
+        g.setColor(Color.black);
+        g.fillRect(0, 0, 800, 600);
+
+
+        gameBackground.draw(g, 0, 0);
+
+        if (waitingForKeyPress) {
+            g.setColor(Color.white);
+            g.drawString(message, (800 - g.getFontMetrics().stringWidth(message)) / 2, 250);
+            g.drawString("Press any key", (800 - g.getFontMetrics().stringWidth("Press any key")) / 2, 300);
+        }
+
+
+        if (currentMode == GameMode.SINGLEPLAY) {
+            // cycle round drawing all the entities we have in the game
+            for (int i = 0; i < entities.size(); i++) {
+                Entity entity = (Entity) entities.get(i);
+                entity.draw(g);
+            }
+        }
+
+        else if (currentMode == GameMode.MULTIPLAY) {
+            if (networkEntities != null) {
+                for (ServerGame.Entity entity : networkEntities.values()) {
+                    Sprite spriteToDraw = null;
+                    switch (entity.getType()) {
+                        case PLAYER:
+                            spriteToDraw = this.ship.getSprite();
+                            break;
+                        case SHOT:
+                            spriteToDraw = this.shotSprite;
+                            break;
+                        case ALIEN:
+                            spriteToDraw = this.alienSprite;
+                            break;
+                    }
+                    if (spriteToDraw != null) {
+                        spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
                     }
                 }
             }
-            if (loginFrame.user != null) {
-                g.setColor(Color.WHITE);
-                g.setFont(new Font("Serif", Font.BOLD, 20));
-                g.drawString("Score: " + loginFrame.user.Score, 650, 580);
-            }
-            for (int i = 0; i < MAX_LIVES; i++) {
-                Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
-                heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
-            }
-            g.dispose();
-            strategy.show();
-            SystemTimer.sleep(lastLoopTime+10-SystemTimer.getTime());
         }
 
+
+        if (loginFrame.user != null) {
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Serif", Font.BOLD, 20));
+            g.drawString("Score: " + loginFrame.user.Score, 650, 30);
+        }
+        for (int i = 0; i < MAX_LIVES; i++) {
+            Sprite heart = (i < playerLives) ? redHeartSprite : greyHeartSprite;
+            heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
+        }
+
+
+        if (isPaused) {
+            drawPauseScreen(g);
+        }
+
+        g.dispose();
+        strategy.show();
+        SystemTimer.sleep(lastLoopTime + 10 - SystemTimer.getTime());
+        }
     }
+
+    private void drawPauseScreen(Graphics2D g) {
+
+        g.setColor(new Color(0, 0, 0, 150));
+        g.fillRect(0, 0, 800, 600);
+
+
+        g.setFont(new Font("SansSerif", Font.BOLD, 50));
+        g.setColor(Color.WHITE);
+        String pauseMsg = "PAUSED";
+        int msgWidth = g.getFontMetrics().stringWidth(pauseMsg);
+        g.drawString(pauseMsg, (800 - msgWidth) / 2, 200);
+
+
+        g.setFont(new Font("SansSerif", Font.BOLD, 30));
+
+
+
+        g.drawRect(resumeButtonBounds.x, resumeButtonBounds.y, resumeButtonBounds.width, resumeButtonBounds.height);
+        String resumeText = "Resume";
+        int resumeWidth = g.getFontMetrics().stringWidth(resumeText);
+        g.drawString(resumeText, (800 - resumeWidth) / 2, resumeButtonBounds.y + 35);
+
+
+
+        g.drawRect(mainMenuButtonBounds.x, mainMenuButtonBounds.y, mainMenuButtonBounds.width, mainMenuButtonBounds.height);
+        String menuText = "Main Menu";
+        int menuWidth = g.getFontMetrics().stringWidth(menuText);
+        g.drawString(menuText, (800 - menuWidth) / 2, mainMenuButtonBounds.y + 35);
+    }
+
 
     /**
      * A class to handle keyboard input from the user. The class
@@ -676,8 +689,39 @@ public class Game extends Canvas
             }
 
             // if we hit escape, then quit the game
-            if (e.getKeyChar() == 27) {
-                System.exit(0);
+            if (e.getKeyChar() == 27) { // 27은 ESC 키의 ASCII 코드입니다.
+                // 게임이 실행 중일 때만 일시정지/해제가 가능하도록 합니다.
+                if (isGameLoopRunning && currentMode == GameMode.SINGLEPLAY) {
+                    isPaused = !isPaused; // isPaused 상태를 반전 (false -> true, true -> false)
+                }
+            }
+        }
+    }
+
+    private class MouseInputHandler extends MouseAdapter {
+        public void mousePressed(MouseEvent e) {
+            // 게임이 일시정지 상태일 때만 클릭을 처리합니다.
+            if (isPaused) {
+                Point clickPoint = e.getPoint();
+
+                // 'Resume' 버튼 영역을 클릭했는지 확인
+                if (resumeButtonBounds != null && resumeButtonBounds.contains(clickPoint)) {
+                    isPaused = false;
+                }
+
+                // 'Main Menu' 버튼 영역을 클릭했는지 확인
+                if (mainMenuButtonBounds != null && mainMenuButtonBounds.contains(clickPoint)) {
+                    isPaused = false;
+                    gameRunning = false;
+                    isGameLoopRunning = false;
+                    strategy = null;
+
+                    SwingUtilities.invokeLater(() -> {
+                        container.setContentPane(mainPanel);
+                        container.revalidate();
+                        container.repaint();
+                    });
+                }
             }
         }
     }
@@ -744,6 +788,14 @@ public class Game extends Canvas
                 loginFrame.user = new User();
                 loginFrame.user.Id = "Guest";
             }
+
+            isPaused = false;
+            playerLives = MAX_LIVES;
+            currentStageIndex = 0;
+            loadStages(); // 스테이지 목록과 첫 스테이지를 로드
+            loginFrame.user.resetScore(); // 점수 초기화
+            waitingForKeyPress = false; // "Press any key" 없이 바로 시작
+
             frame.setContentPane(gamePanel);
             frame.revalidate();
             frame.repaint();
