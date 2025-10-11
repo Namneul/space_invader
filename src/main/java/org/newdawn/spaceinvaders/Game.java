@@ -1,10 +1,7 @@
 package org.newdawn.spaceinvaders;
 
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -698,21 +695,42 @@ public class Game extends Canvas
         mainPanel.setLayout(null);
 
         ButtonController buttonController = new ButtonController();
-
+        ImageIcon startIcon = new ImageIcon(getClass().getClassLoader().getResource("button/startBtn.png"));
+        ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("button/loginBtn.png"));
+        ImageIcon rankIcon = new ImageIcon(getClass().getClassLoader().getResource("button/rankBtn.png"));
+        ImageIcon onlineIcon = new ImageIcon(getClass().getClassLoader().getResource("button/onlineBtn.png"));
+        ImageIcon startIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/startBtn_hover.png"));
+        ImageIcon loginIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/loginBtn_hover.png"));
+        ImageIcon rankIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/rankBtn_hover.png"));
+        ImageIcon onlineIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/onlineBtn_hover.png"));
         //버튼 생성
-        JButton[] menuButtons = {new JButton("startGame"),
-                new JButton("login"),
-                new JButton("Rank"),
-                new JButton("OnLine"),
-                new JButton("exit")};
+        JButton[] menuButtons = {
+                new JButton(startIcon),
+                new JButton(loginIcon),
+                new JButton(rankIcon),
+                new JButton(onlineIcon)
+        };
 
         for(int i=0;i<menuButtons.length;i++) {
             mainPanel.add(menuButtons[i]);
         }
-        menuButtons[0].setBounds(300,335,200,50);
-        menuButtons[1].setBounds(300,395,200,50);
-        menuButtons[2].setBounds(300,455,200,50);
-        menuButtons[3].setBounds(300,515,200,50);
+        menuButtons[0].setBounds(275,293,260,70);
+        menuButtons[0].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[0].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[0].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[1].setBounds(275,365,260,70);
+        menuButtons[1].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[1].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[1].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[2].setBounds(275,436,260,70);
+        menuButtons[2].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[2].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[2].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[3].setBounds(275,508,260,70);
+        menuButtons[3].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[3].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[3].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+
         //메인화면 패널로 전환
         frame.setContentPane(mainPanel);
         frame.revalidate();
@@ -745,8 +763,36 @@ public class Game extends Canvas
             }).start();
         });
 
+        menuButtons[0].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[0].setIcon(startIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[0].setIcon(startIcon);
+            }
+        });
+
         menuButtons[1].addActionListener(e -> {
             buttonController.pressLoginBtn(loginFrame, mainPanel,frame);
+        });
+
+        menuButtons[1].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[1].setIcon(loginIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[1].setIcon(loginIcon);
+            }
         });
 
         menuButtons[2].addActionListener(e -> {
@@ -756,6 +802,21 @@ public class Game extends Canvas
                 ex.printStackTrace();
             }
         });
+
+        menuButtons[2].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[2].setIcon(rankIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[2].setIcon(rankIcon);
+            }
+        });
+
         menuButtons[3].addActionListener(e ->{
             if (isGameLoopRunning) return;
             frame.setContentPane(gamePanel);
@@ -782,6 +843,20 @@ public class Game extends Canvas
                     throw new RuntimeException(ex);
                 }
             }).start();
+        });
+
+        menuButtons[3].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[3].setIcon(onlineIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[3].setIcon(onlineIcon);
+            }
         });
 
     }
