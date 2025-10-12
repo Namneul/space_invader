@@ -1,26 +1,28 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
-import org.newdawn.spaceinvaders.Game;
-import org.newdawn.spaceinvaders.Sprite;
-import org.newdawn.spaceinvaders.SpriteStore;
+import org.newdawn.spaceinvaders.multiplay.Server;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 public class ServerAlienEntity extends ServerGame.Entity {
 
     private long lastFrameChange;
     private long frameDuration = 250;
     private int frameNumber;
+    private final int maxHP = 200;
+    private int currentHP;
 
     public ServerAlienEntity(ServerGame serverGame, int x, int y){
         super(serverGame,20,20,x, y);
         moveSpeed = 75;
         dx = -moveSpeed;
         this.type = ServerGame.EntityType.ALIEN;
+        currentHP = this.maxHP;
     }
 
 
     @Override
     public void tick() {
-        setX(getX()+dx/Server.TICKS_PER_SECOND);
+        setX(getX()+dx/ Server.TICKS_PER_SECOND);
         if (dx<0 && getX()<10 || dx>0 && getX()>750){
             this.game.requestLogicUpdate();
         }
@@ -35,13 +37,18 @@ public class ServerAlienEntity extends ServerGame.Entity {
             }
         }
 
-        if (Math.random()< 0.001){
+        if (Math.random()< 0.000001){
             game.alienFires(this);
         }
     }
 
-    public void hit(int dmg){
-//        this.hp -= dmg;
+    public void hit(ServerGame.Entity otherEntity,int dmg){
+        this.currentHP -= dmg;
+        if (currentHP <= 0){
+            game.notifyAlienKilled(this, ((ServerShotEntity) otherEntity).getOwnerId());
+            game.removeEntity(this.getId());
+        }
+        game.removeEntity(otherEntity.getId());
     }
 
     public void setMoveSpeed(double moveSpeed){
@@ -63,9 +70,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
     @Override
     public void handleCollision(ServerGame.Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity) {
-            game.notifyAlienKilled(this, ((ServerShotEntity) otherEntity).getOwnerId());
-            game.removeEntity(this.getId());
-            game.removeEntity(otherEntity.getId());
+           hit(otherEntity, ((ServerShotEntity) otherEntity).getDamage());
         }
     }
 }

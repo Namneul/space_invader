@@ -1,11 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay;
 
-import org.newdawn.spaceinvaders.Game;
-import org.newdawn.spaceinvaders.LoginFrame;
+import org.newdawn.spaceinvaders.multiplay.ServerEntity.*;
 import org.newdawn.spaceinvaders.multiplay.stage.*;
-import java.awt.*;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.TreeMap;
 
 public class ServerGame {
@@ -32,15 +32,19 @@ public class ServerGame {
 
     private ArrayList<Stage> stages;
 
-
+    private final Random random = new Random();
 
 
     public enum EntityType{
         PLAYER,
         ALIEN,
+        REFLECT_ALIEN,
         SHOT,
         ALIEN_SHOT,
-        ITEM
+        ITEM,
+        METEOR,
+        BOSS,
+        LASER
     }
 
 
@@ -53,6 +57,8 @@ public class ServerGame {
         protected double dy;
         protected EntityType type;
         protected double moveSpeed;
+        protected int currentHP;
+        protected int maxHP;
 
 
 
@@ -65,6 +71,8 @@ public class ServerGame {
             this.y = y;
         }
 
+        public int getCurrentHP(){return currentHP; }
+        public int getMaxHP(){return maxHP; }
 
         public final int getId() {
             return id;
@@ -93,6 +101,7 @@ public class ServerGame {
         public void setMoveSpeed(double moveSpeed){
             this.moveSpeed = moveSpeed;
         }
+
         public double getMoveSpeed(){ return moveSpeed; }
 
         public abstract void tick();
@@ -113,12 +122,6 @@ public class ServerGame {
     }
 
 
-    public class GameSettings {
-        public int ALIEN_MOVESPEED = 75;
-        public int SHOT_MOVESPEED = -300;
-        public int SHIP_MOVESPEED = 150;
-    }
-
     public ServerGame(Server server){
         this.server = server;
         entities = new TreeMap<Integer, Entity>();
@@ -138,10 +141,17 @@ public class ServerGame {
         for (final Entity entity: entitiesCopy.values()){
             entity.tick();
         }
+        if (currentStageIndex>3 && Math.random()<0.003){
+            spawnMeteor();
+        }
         if (logicUpdateRequested){
             for (Entity entity: entities.values()){
                 if (entity instanceof ServerAlienEntity){
                     ((ServerAlienEntity) entity).doLogic();
+                } else if (entity instanceof ServerReflectAlienEntity){
+                    ((ServerReflectAlienEntity) entity).doLogic();
+                } else if (entity instanceof ServerBossEntity) {
+                    ((ServerBossEntity) entity).doLogic();
                 }
             }
             this.logicUpdateRequested = false;
@@ -183,7 +193,7 @@ public class ServerGame {
         // if there are still some aliens left then they all need to get faster, so
         // speed up all the existing aliens
         for (Entity entity: entities.values()){
-            if (entity instanceof ServerAlienEntity) {
+            if (entity instanceof ServerAlienEntity || entity instanceof ServerReflectAlienEntity) {
                 // speed up by 2%
                 entity.setMoveSpeed(entity.getMoveSpeed()*1.02);
             }
@@ -209,6 +219,11 @@ public class ServerGame {
     }
 
     public void notifyWin() {
+        if (currentStageIndex == 4){
+            ServerBossEntity boss = new ServerBossEntity(this, 400, 50);
+            entities.put(boss.getId(), boss);
+            return;
+        }
         currentStageIndex++; // 다음 스테이지로 인덱스 증가
         // 만약 마지막 스테이지까지 클리어했다면
         if (currentStageIndex >= stages.size()) {
@@ -260,15 +275,24 @@ public class ServerGame {
         if (playerShip == null){
             return;
         }
+
+        ServerPlayerShipEntity playerShipEntity = (ServerPlayerShipEntity) playerShip;
+
         switch (receivedInput.getAction()){
             case MOVE_LEFT:
+                if (!playerShipEntity.isPlayerStunned()){
                 playerShip.setX(playerShip.getX()-5);
+                }
                 break;
             case MOVE_RIGHT:
+                if (!playerShipEntity.isPlayerStunned()){
                 playerShip.setX(playerShip.getX()+5);
+                }
                 break;
             case FIRE:
+                if (!playerShipEntity.isPlayerStunned()){
                 tryToFire((ServerPlayerShipEntity) playerShip);
+                }
                 break;
             case STOP:
                 break;
@@ -297,17 +321,56 @@ public class ServerGame {
         System.out.println("ServerGame: "+currentStage.getStageName()+" initialized.");
     }
 
+    public void spawnMeteor(){
+        int randomX = random.nextInt(800);
+
+        ServerMeteoriteEntity meteorite = new ServerMeteoriteEntity(this, randomX, -50);
+        entities.put(meteorite.getId(), meteorite);
+    }
+
+    public void addEntity(Entity entity){
+        entities.put(entity.getId(), entity);
+    }
+
+
+    public void notifyBossKilled(Entity boss, int killerId){
+        PlayerData killerData = server.getPlayerDataMap().get(killerId);
+        if (killerData != null){
+            killerData.increaseBossKilledScore();
+            }
+        System.out.println("보스 처치");
+        currentStageIndex++;
+        notifyWin();
+    }
+
+    public void bossSummonsMinions(int bossX, int bossY) {
+        System.out.println("보스 패턴: 하수인 소환!");
+        alienCount++;
+        for (int i = 0; i < 5; i++) {
+            // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
+            ServerAlienEntity minion = new ServerAlienEntity(this, bossX - 100 + (i * 50), bossY + 50);
+            entities.put(minion.getId(), minion);
+            alienCount++;
+        }
+    }
+
+    public void bossFiresShotgun(int bossX, int bossY) {
+        System.out.println("보스 패턴: 샷건 발사!");
+        for (int i = -2; i <= 2; i++) {
+            // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
+            ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45, bossY + 100);
+            shot.setHorizontalMovement(i * 40);
+            entities.put(shot.getId(), shot);
+        }
+    }
+
+    public void bossFiresLaser(ServerBossEntity boss) {
+        // ServerGame이 직접 레이저를 생성하고 entities 맵에 추가합니다.
+        ServerLaserEntity laser = new ServerLaserEntity(this, boss);
+        entities.put(laser.getId(), laser);
+    }
 
     private int getSmallestAvailableId() {return smallestAvailableId++;}
 
-    private void initEntities(){
-        for (int row = 0; row < 3; row++) {
-            for (int x = 0; x < 12; x++) {
-                ServerGame.Entity alien = new ServerAlienEntity(this, 100 + (x * 50), 50 + (row * 30));
-                entities.put(alien.getId(), alien);
-                System.out.println("Server: 외계인 생성 완료. 총 엔티티 수: " + entities.size());
-            }
-        }
-    }
 }
 

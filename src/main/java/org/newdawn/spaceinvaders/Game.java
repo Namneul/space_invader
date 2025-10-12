@@ -1,6 +1,7 @@
 package org.newdawn.spaceinvaders;
 
 import org.newdawn.spaceinvaders.multiplay.*;
+import org.newdawn.spaceinvaders.multiplay.ServerEntity.*;
 import org.newdawn.spaceinvaders.multiplay.communication.LoginResponse;
 import org.newdawn.spaceinvaders.multiplay.communication.RankRequest;
 import org.newdawn.spaceinvaders.multiplay.communication.RankResponse;
@@ -8,17 +9,13 @@ import org.newdawn.spaceinvaders.multiplay.communication.SignUpResponse;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.sql.SQLException;
 import java.util.TreeMap;
 
 /**
@@ -48,11 +45,17 @@ public class Game extends Canvas {
     private Sprite[] shipSprite = new Sprite[4];
     private Sprite[] shotSprite = new Sprite[4];
     private Sprite[] alienFrames = new Sprite[4];
+    private Sprite[] meteorFrames = new Sprite[16];
     private Sprite redHeartSprite;
     private Sprite greyHeartSprite;
     private Sprite mainBackground;
+    private Sprite gameBackground;
     private Sprite itemSprite;
     private Sprite alienShotSprite;
+    private Sprite reflectAlienSprite;
+    private Sprite bossSprite;
+    private Sprite bossLaserSprite;
+    private Sprite bossChargingSprite;
 
     // 서버 변수
     private Socket socket;
@@ -118,6 +121,14 @@ public class Game extends Canvas {
         mainBackground = store.getSprite("mainBackground.png");
         itemSprite = store.getSprite("sprites/gems_db16.png");
         alienShotSprite = store.getSprite("sprites/alienshot.png");
+        reflectAlienSprite = store.getSprite("sprites/ReflectAlien.png");
+        gameBackground = store.getSprite("gameBackground.png");
+        for (int i = 0; i < 16; i++) {
+            meteorFrames[i] = store.getSprite("sprites/meteor/b1000"+i+".png");
+        }
+        bossSprite = store.getSprite("sprites/boss.png");
+        bossChargingSprite = store.getSprite("sprites/boss_charging.png");
+        bossLaserSprite = store.getSprite("sprites/boss_laser.png");
     }
 
     /**
@@ -173,6 +184,7 @@ public class Game extends Canvas {
             Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
             g.setColor(Color.black);
             g.fillRect(0, 0, 800, 600); // 배경 색
+            gameBackground.draw(g,0,0);
 
             if (currentGameState == null){
                 g.setColor(Color.WHITE);
@@ -195,6 +207,10 @@ public class Game extends Canvas {
                                 int frame = ((ServerAlienEntity) entity).getFrameNumber();
                                 spriteToDraw = this.alienFrames[frame];
                                 break;
+                            case REFLECT_ALIEN:
+                                ServerReflectAlienEntity reflectAlien = (ServerReflectAlienEntity) entity;
+                                spriteToDraw = this.reflectAlienSprite;
+                                break;
                             case SHOT:
                                 ServerShotEntity shot = (ServerShotEntity) entity;
                                 spriteToDraw = shotSprite[shot.getUpgradeLevel()];
@@ -204,6 +220,48 @@ public class Game extends Canvas {
                                 break;
                             case ALIEN_SHOT:
                                 spriteToDraw = this.alienShotSprite;
+                                break;
+                            case METEOR:
+                                int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
+                                spriteToDraw = this.meteorFrames[frameNumber];
+                                break;
+                            case BOSS:
+                                int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
+                                if (bossFrame == 1){
+                                    spriteToDraw = this.bossChargingSprite;
+                                } else{
+                                    spriteToDraw = this.bossSprite;
+                                }
+                                if (spriteToDraw == null){
+                                    spriteToDraw.draw(g, (int)entity.getX(), (int)entity.getY());
+                                }
+                                int maxHP = entity.getMaxHP();
+                                int currentHP = entity.getCurrentHP();
+
+                                // 3. 체력바의 위치와 크기를 정한다.
+                                if (maxHP > 0 && spriteToDraw != null) {
+                                    int barWidth = 100; // 체력바 너비
+                                    int barHeight = 10; // 체력바 높이
+                                    // 보스 스프라이트 바로 아래에 가운데 정렬
+                                    int barX = (int)entity.getX() + (spriteToDraw.getWidth() / 2) - (barWidth / 2);
+                                    int barY = (int)entity.getY() + spriteToDraw.getHeight() + 5;
+
+                                    // 4. 체력바를 그린다!
+                                    // 배경 (빨간색)
+                                    g.setColor(Color.RED);
+                                    g.fillRect(barX, barY, barWidth, barHeight);
+
+                                    // 현재 체력 (녹색)
+                                    double healthPercent = (double)currentHP / maxHP;
+                                    g.setColor(Color.GREEN);
+                                    g.fillRect(barX, barY, (int)(barWidth * healthPercent), barHeight);
+
+                                    g.setColor(Color.WHITE);
+                                    g.drawRect(barX, barY, barWidth, barHeight);
+                                }
+                                break;
+                            case LASER:
+                                spriteToDraw = this.bossLaserSprite;
                                 break;
                         }
                         if (spriteToDraw != null){
@@ -305,11 +363,18 @@ public class Game extends Canvas {
 
 
     public void mainMenu() {
+
+        System.out.println("[게임 로그] 메인 메뉴로 복귀. 게임 상태 초기화");
+        isGameLoopRunning = false;
+        isConnecting = false;
+        currentGameState = null;
+        disconnectIfConnected();
+
         if (this.singlePlayServerProcess != null) {
             this.singlePlayServerProcess.destroy(); // 실행 중인 싱글플레이 서버 종료
             this.singlePlayServerProcess = null;
         }
-            disconnectIfConnected();
+
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -322,22 +387,43 @@ public class Game extends Canvas {
         panel.setPreferredSize(new Dimension(800, 600));
         panel.setLayout(null);
 
-        ButtonController buttonController = new ButtonController(this);
+        ImageIcon startIcon = new ImageIcon(getClass().getClassLoader().getResource("button/startBtn.png"));
+        ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("button/loginBtn.png"));
+        ImageIcon rankIcon = new ImageIcon(getClass().getClassLoader().getResource("button/rankBtn.png"));
+        ImageIcon onlineIcon = new ImageIcon(getClass().getClassLoader().getResource("button/onlineBtn.png"));
+        ImageIcon startIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/startBtn_hover.png"));
+        ImageIcon loginIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/loginBtn_hover.png"));
+        ImageIcon rankIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/rankBtn_hover.png"));
+        ImageIcon onlineIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/onlineBtn_hover.png"));
 
         //버튼 생성
-        JButton[] menuButtons = {new JButton("SinglePlay"),
-                new JButton("login"),
-                new JButton("Rank"),
-                new JButton("OnLine"),
-                new JButton("exit")};
+        JButton[] menuButtons = {
+                new JButton(startIcon),
+                new JButton(loginIcon),
+                new JButton(rankIcon),
+                new JButton(onlineIcon)
+        };
 
-        for (int i = 0; i < menuButtons.length; i++) {
+        for(int i=0;i<menuButtons.length;i++) {
             panel.add(menuButtons[i]);
         }
-        menuButtons[0].setBounds(300, 335, 200, 50);
-        menuButtons[1].setBounds(300, 395, 200, 50);
-        menuButtons[2].setBounds(300, 455, 200, 50);
-        menuButtons[3].setBounds(300, 515, 200, 50);
+        menuButtons[0].setBounds(275,293,260,70);
+        menuButtons[0].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[0].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[0].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[1].setBounds(275,365,260,70);
+        menuButtons[1].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[1].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[1].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[2].setBounds(275,436,260,70);
+        menuButtons[2].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[2].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[2].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        menuButtons[3].setBounds(275,508,260,70);
+        menuButtons[3].setBorderPainted(false);       // 버튼 테두리 설정 해제
+        menuButtons[3].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        menuButtons[3].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+
         //메인화면 패널로 전환
         container.setContentPane(panel);
         container.revalidate();
@@ -350,7 +436,8 @@ public class Game extends Canvas {
 
             new Thread(() -> {
                 try {
-                    ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", "target/classes", "org.newdawn.spaceinvaders.multiplay.Server", "1234", "single");
+                    String classpath = System.getProperty("java.class.path");
+                    ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", "1234", "single");
                     pb.redirectErrorStream(true); // 에러 출력을 표준 출력으로 합쳐서 보기 편하게 함
                     pb.directory(new File("."));
                     this.singlePlayServerProcess = pb.start();
@@ -376,7 +463,7 @@ public class Game extends Canvas {
 
             new Thread(() -> {
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException ex) {
                     return;
                 }
@@ -393,23 +480,61 @@ public class Game extends Canvas {
         });
 
         menuButtons[2].addActionListener(e -> {
-            String host = "localhost";
-            int port = 12345;
+            // UI가 멈추지 않도록 모든 작업을 새 스레드에서 실행
             new Thread(() -> {
+                Process serverProcess = null;
+                // 랭킹 확인만을 위한 임시 포트를 사용 (기존 서버와 충돌 방지)
+                String tempPort = "12346";
+
                 try {
-                    // 로그인/랭킹 전용 임시 연결 및 요청 전송
-                    Object response = sendRequestWithTempConnection(host, port, new RankRequest());
+                    // 랭킹 확인 전용 임시 서버를 백그라운드에서 실행
+                    String classpath = System.getProperty("java.class.path");
+                    ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
+                    pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
+                    serverProcess = pb.start();
+                    System.out.println("임시 랭킹 서버를 시작합니다 (포트: " + tempPort + ")");
+
+                    // 서버 프로세스가 출력하는 로그를 실시간으로 보여주는 코드 (디버깅용)
+                    Process finalServerProcess = serverProcess;
+                    new Thread(() -> {
+                        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                System.out.println("[Rank Server]: " + line);
+                            }
+                        } catch (IOException ioException) {}
+                    }).start();
+
+
+                    // 서버가 완전히 켜질 때까지 잠시 대기
+                    Thread.sleep(500); // 0.5초
+
+                    // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
+                    Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());
+
                     if (response instanceof RankResponse) {
                         RankResponse res = (RankResponse) response;
                         SwingUtilities.invokeLater(() -> {
-                            try { new RankBoard(res.getRanking()); }
-                            catch (Exception ex) { JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다."); }
+                            try {
+                                new RankBoard(res.getRanking());
+                            } catch (Exception ex) {
+                                JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
+                            }
                         });
                     }
-                } catch (IOException | ClassNotFoundException ex) {
-                    SwingUtilities.invokeLater(()-> JOptionPane.showMessageDialog(container, "서버 통신 오류: " + ex.getMessage()));
+
+                } catch (IOException | InterruptedException | ClassNotFoundException ex) {
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
+                    ex.printStackTrace();
+
+                } finally {
+                    // 모든 작업이 끝나면 (성공하든 실패하든) 임시 서버 프로세스를 강제 종료
+                    if (serverProcess != null && serverProcess.isAlive()) {
+                        System.out.println("임시 랭킹 서버를 종료합니다.");
+                        serverProcess.destroyForcibly();
+                    }
                 }
-            }).start();
+            }, "rank-requester-thread").start();
         });
 
         menuButtons[3].addActionListener(e -> {
@@ -443,6 +568,62 @@ public class Game extends Canvas {
                 throw new RuntimeException(ex);
             }
         });
+        menuButtons[0].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[0].setIcon(startIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[0].setIcon(startIcon);
+            }
+        });
+
+        menuButtons[1].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[1].setIcon(loginIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[1].setIcon(loginIcon);
+            }
+        });
+
+        menuButtons[2].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[2].setIcon(rankIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[2].setIcon(rankIcon);
+            }
+        });
+
+        menuButtons[3].addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                menuButtons[3].setIcon(onlineIcon_hover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                menuButtons[3].setIcon(onlineIcon);
+            }
+        });
+
 
     }
 

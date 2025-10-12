@@ -3,21 +3,21 @@ package org.newdawn.spaceinvaders;
 import org.newdawn.spaceinvaders.multiplay.RankData;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class RankBoard {
     JFrame frame;
     JPanel panel;
-     public RankBoard(ArrayList<RankData> ranking) throws SQLException {
+     public RankBoard(ArrayList<RankData> ranking){
          frame = new JFrame("Rank Board");
          frame.setPreferredSize(new Dimension(800,600));
          frame.setLayout(null);
 
          String[][] scores = new String[ranking.size()][2];
-         for(int i = 0; i < ranking.size(); i++) {
+         for(int i = 0; i < 14; i++) {
              RankData rank = ranking.get(i);
              scores[i][0] = rank.getUsername();
              scores[i][1] = String.valueOf(rank.getScore());
@@ -25,18 +25,28 @@ public class RankBoard {
 
          String[] header = {"Name", "Score"};
 
-        JTable table = new JTable(scores, header);
-        table.setFont(new Font("Serif", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("Serif", Font.PLAIN, 20));
-        table.setRowHeight(30);
+        panel = new JPanel(){Image background = new ImageIcon(RankBoard.class.getResource("/ScoreboardBackground.png")).getImage();
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(0, 0, 800, 600);
+            @Override
+            public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.drawImage(background,0,0,null);
+                int starty = 100;
 
-        panel = new JPanel();
+                g.setColor(Color.WHITE);
+                int startXRank = 320;
+                int startXName = 390;
+                int startXScore = 460;
+                for (int i = 0; i < 14; i++) {
+                    g.drawString((i+1)+"위", startXRank, starty + i * 30);
+                    g.drawString(scores[i][0], startXName, starty + i * 30);
+                    g.drawString(scores[i][1], startXScore, starty + i * 30);
+                }
+            }
+        };
+
         panel.setLayout(null);
         panel.setBounds(0, 0, 800, 600);
-        panel.add(scrollPane);
 
         frame.add(panel);
         frame.pack();

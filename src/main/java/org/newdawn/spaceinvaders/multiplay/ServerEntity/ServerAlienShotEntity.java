@@ -1,4 +1,7 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.ServerEntity;
+
+import org.newdawn.spaceinvaders.multiplay.Server;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 public class ServerAlienShotEntity extends ServerGame.Entity {
 
@@ -9,10 +12,15 @@ public class ServerAlienShotEntity extends ServerGame.Entity {
         moveSpeed = 300;
     }
 
+    public void setHorizontalMovement(double dx){
+        this.dx = dx;
+    }
+
     @Override
     public void tick() {
-        setY(getY()+moveSpeed/Server.TICKS_PER_SECOND);
-        if (getY() > 600){ this.game.removeEntity(this.getId()); }
+        setX(getX()+dx/ Server.TICKS_PER_SECOND);
+        setY(getY()+moveSpeed/ Server.TICKS_PER_SECOND);
+        if (getY() > 600 || getY() < -50 || getX() < -50 || getX() > 850){ this.game.removeEntity(this.getId()); }
     }
 
     @Override

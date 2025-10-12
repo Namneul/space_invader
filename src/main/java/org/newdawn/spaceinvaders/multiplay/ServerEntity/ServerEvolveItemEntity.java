@@ -1,4 +1,7 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.ServerEntity;
+
+import org.newdawn.spaceinvaders.multiplay.Server;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 public class ServerEvolveItemEntity extends ServerGame.Entity {
 
@@ -12,7 +15,7 @@ public class ServerEvolveItemEntity extends ServerGame.Entity {
 
     @Override
     public void tick() {
-        setY(getY()+moveSpeed/Server.TICKS_PER_SECOND);
+        setY(getY()+moveSpeed/ Server.TICKS_PER_SECOND);
         if (getY()>700){
             game.removeEntity(this.getId());
         }

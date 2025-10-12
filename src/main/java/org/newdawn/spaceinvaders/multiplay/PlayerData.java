@@ -28,6 +28,8 @@ public class PlayerData {
 
     public void increaseScore() { score++; }
 
+    public void increaseBossKilledScore(){ score += 5000; }
+
     public void decreaseLives() { lives--; }
 }
 

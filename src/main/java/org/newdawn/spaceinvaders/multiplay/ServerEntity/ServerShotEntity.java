@@ -1,11 +1,14 @@
-package org.newdawn.spaceinvaders.multiplay;
+package org.newdawn.spaceinvaders.multiplay.ServerEntity;
+
+import org.newdawn.spaceinvaders.multiplay.Server;
+import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 public class ServerShotEntity extends ServerGame.Entity {
 
 
     private final int ownerId;
-    private boolean isUsed = false;
     private int upgradeLevel;
+    private int damage = 50;
 
     public ServerShotEntity(ServerGame serverGame, double x, double y, int ownerId, int upgradeLevel) {
         super(serverGame,10,10, x, y);
@@ -17,7 +20,7 @@ public class ServerShotEntity extends ServerGame.Entity {
 
     @Override
     public void tick() {
-        setY(getY()-moveSpeed/Server.TICKS_PER_SECOND);
+        setY(getY()-moveSpeed/ Server.TICKS_PER_SECOND);
         if (getY()<0){this.game.removeEntity(this.getId());}
 
     }
@@ -26,15 +29,11 @@ public class ServerShotEntity extends ServerGame.Entity {
 
     public int getOwnerId(){ return ownerId; }
 
+    public int getDamage(){
+        return damage*(getUpgradeLevel()+1);
+    }
+
     @Override
     public void handleCollision(ServerGame.Entity otherEntity) {
-
-        if (isUsed) return;
-
-        if (otherEntity instanceof ServerAlienEntity) {
-            game.removeEntity(this.getId());
-            game.removeEntity(otherEntity.getId());
-            isUsed =true;
-        }
     }
 }
