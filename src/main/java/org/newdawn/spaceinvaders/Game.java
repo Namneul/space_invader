@@ -94,6 +94,9 @@ public class Game extends Canvas
     private int currentStageIndex;          // 현재 스테이지 인덱스
     private Stage currentStage;
 
+
+    private boolean playerStunned = false; // 플레이어가 스턴 상태인지 저장
+    private long stunEndTime = 0;
     /**
      * Construct our game and set it running.
      */
@@ -270,6 +273,11 @@ public class Game extends Canvas
         }
     }
 
+    public void stunPlayer() {
+        this.playerStunned = true;
+        this.stunEndTime = System.currentTimeMillis() + 1000; // 현재 시간 + 1초
+    }
+
     /**
      * Notification that the player has won since all the aliens
      * are dead.
@@ -346,8 +354,8 @@ public class Game extends Canvas
      */
     private void loadStages() {
         stages = new ArrayList<>();
-//        stages.add(new Stage1());
-//        stages.add(new Stage2());
+        stages.add(new Stage1());
+        stages.add(new Stage2());
         stages.add(new Stage3());
         stages.add(new Stage4());
         stages.add(new Stage5());
@@ -384,6 +392,15 @@ public class Game extends Canvas
                 lastFpsTime = 0;
                 fps = 0;
             }
+            if(currentStageIndex >= 3){
+                if (Math.random() < 0.005) {
+                    int randomX = (int) (Math.random() * 750); // 0~750 사이의 랜덤 x좌표
+                    MeteoriteEntity meteorite = new MeteoriteEntity(this, randomX, -50); // 화면 위에서 시작
+                    entities.add(meteorite);
+                }
+            }
+
+
 
             // finally, we've completed drawing so clear up the graphics
             // and flip the buffer over
@@ -435,15 +452,21 @@ public class Game extends Canvas
                 // update the movement appropraitely
                 ship.setHorizontalMovement(0);
 
-                if ((leftPressed) && (!rightPressed)) {
-                    ship.setHorizontalMovement(-moveSpeed);
-                } else if ((rightPressed) && (!leftPressed)) {
-                    ship.setHorizontalMovement(moveSpeed);
+                if (playerStunned && System.currentTimeMillis() > stunEndTime) {
+                    playerStunned = false; // 스턴 상태 해제
+                }
+                // 스턴 상태가 아닐 때만 키 입력을 처리
+                if (!playerStunned) {
+                    if ((leftPressed) && (!rightPressed)) {
+                        ship.setHorizontalMovement(-moveSpeed);
+                    } else if ((rightPressed) && (!leftPressed)) {
+                        ship.setHorizontalMovement(moveSpeed);
+                    }
+                    if (firePressed) {
+                        tryToFire();
+                    }
                 }
 
-                if (firePressed) {
-                    tryToFire();
-                }
             }
         }
 
