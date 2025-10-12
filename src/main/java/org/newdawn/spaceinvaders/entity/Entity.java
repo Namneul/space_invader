@@ -156,7 +156,11 @@ public abstract class Entity {
 
 		return me.intersects(him);
 	}
-	
+
+	public Rectangle getBounds() {
+		return new Rectangle((int)x, (int)y, sprite.getWidth(), sprite.getHeight());
+	}
+
 	/**
 	 * Notification that this entity collided with another.
 	 * 

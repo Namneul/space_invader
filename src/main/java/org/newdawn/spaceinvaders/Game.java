@@ -97,6 +97,8 @@ public class Game extends Canvas
 
     private boolean playerStunned = false; // 플레이어가 스턴 상태인지 저장
     private long stunEndTime = 0;
+
+    private BossEntity boss = null; // 보스 객체를 저장할 변수
     /**
      * Construct our game and set it running.
      */
@@ -278,6 +280,19 @@ public class Game extends Canvas
         this.stunEndTime = System.currentTimeMillis() + 1000; // 현재 시간 + 1초
     }
 
+
+    /**
+     * Adds a new entity to the game's list of entities.
+     * @param entity The entity to add.
+     */
+    public void addEntity(Entity entity) {
+        entities.add(entity);
+    }
+
+    public Entity getShip() {
+        return this.ship;
+    }
+
     /**
      * Notification that the player has won since all the aliens
      * are dead.
@@ -309,7 +324,13 @@ public class Game extends Canvas
         }
         loginFrame.user.increaseScore();
         if (alienCount == 0) {
-            notifyWin();
+            // 현재 스테이지가 5스테이지(인덱스 4)이고 보스가 아직 없다면 보스 생성
+            if (currentStageIndex == 4 && boss == null) {
+                boss = new BossEntity(this, 350, 50);
+                entities.add(boss);
+            } else {
+                notifyWin();
+            }
         }
 
         // if there are still some aliens left then they all need to get faster, so
