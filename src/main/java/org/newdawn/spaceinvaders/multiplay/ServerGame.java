@@ -18,6 +18,7 @@ public class ServerGame {
 
     private Stage currentStage;
 
+
     public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
 
     private boolean logicUpdateRequested = false;
@@ -35,6 +36,8 @@ public class ServerGame {
     private ArrayList<Stage> stages;
 
     private final Random random = new Random();
+
+    private boolean bossClear = false;
 
 
     public enum EntityType{
@@ -72,7 +75,6 @@ public class ServerGame {
             this.x = x;
             this.y = y;
         }
-
 
         public void setHorizontalMovement(double dx){
             this.dx = dx;
@@ -221,6 +223,8 @@ public class ServerGame {
         }
     }
 
+    public boolean isBossClear(){return bossClear;}
+
    public void notifyDeath(int deadPlayerId) {
 
         PlayerData deadPlayerData = server.getPlayerDataMap().get(deadPlayerId);
@@ -252,7 +256,7 @@ public class ServerGame {
             for (PlayerData data:server.getPlayerDataMap().values()){
                 server.getLoginHost().insertScore(data.getId(), data.getScore());
             }
-        } else {
+            this.bossClear = true;
             // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
             currentStage = stages.get(currentStageIndex);
             currentStage.initialize(this, entities);

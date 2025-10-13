@@ -105,7 +105,7 @@ public class ClientHandler implements Runnable {
 
     public int getPlayershipId(){ return playershipId; }
 
-    public void sendUpdate(GameState state){
+    public void sendUpdate(Object state){
         try {
             System.out.println("[핸들러 로그] 클라이언트로 GameState 업데이트 전송 시도...");
             outputStream.writeObject(state);

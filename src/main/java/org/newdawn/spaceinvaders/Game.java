@@ -182,6 +182,7 @@ public class Game extends Canvas {
         long last = System.currentTimeMillis();
         while (isGameLoopRunning) {
 
+
             if (leftPressed){
                 sendToServer(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
             }
@@ -258,32 +259,6 @@ public class Game extends Canvas {
                                 int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
                                 spriteToDraw = this.meteorFrames[frameNumber];
                                 break;
-//                            case BOSS:
-//                                int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
-//                                if (bossFrame == 1){
-//                                    spriteToDraw = this.bossSprite;
-//                                    spriteToDraw.draw(g,(int)entity.getX(),(int)entity.getY());
-//                                    spriteToDraw = this.bossChargingSprite;
-//                                    spriteToDraw.draw(g,(int)entity.getX()+(int)entity.getWidth()/2,(int)entity.getY()+(int)entity.getHeight());
-//                                    spriteToDraw = null;
-//                                } else{
-//                                    spriteToDraw = this.bossSprite;
-//                                }
-//                                int bossBarWidth = 120;
-//                                int bossBarHeight = 3;
-//                                int bossBarx = (int)entity.getX()+10;
-//                                int bossBary = (int)entity.getY() +(int)entity.getHeight() + 2;
-//
-//                                int bossMaxHp = entity.getMaxHP();
-//                                int bossCurrentHp = entity.getCurrentHP();
-//                                double bossHealthPercent = (double)bossCurrentHp / bossMaxHp;
-//
-//                                g.setColor(Color.red);
-//                                g.fillRect(bossBarx, bossBary, bossBarWidth, bossBarHeight);
-//
-//                                g.setColor(Color.green);
-//                                g.fillRect(bossBarx, bossBary, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
-//                                break;
                                 case BOSS:
                                 int bossFrame = ((ServerBossEntity)entity).getFrameNumber();
                                 Sprite baseSprite = this.bossSprite;
@@ -698,7 +673,20 @@ public class Game extends Canvas {
                     Object msg = in.readObject();
                     System.out.println("[클라이언트 로그] 서버로부터 메시지 수신: " + msg.getClass().getSimpleName());
 
-                    if (msg instanceof GameState) {
+                    if (msg instanceof String) {
+                        String signal = (String) msg;
+                        // "VICTORY" 신호인지 확인한다.
+                        if (signal.equals("VICTORY")) {
+                            isGameLoopRunning = false; // 게임 루프를 멈춘다.
+
+                            SwingUtilities.invokeLater(() -> {
+                                JOptionPane.showMessageDialog(container, "승리!", "게임 클리어", JOptionPane.INFORMATION_MESSAGE);
+                                mainMenu(); // 메인 메뉴로 돌아간다.
+                            });
+
+                            break; // 신호를 처리했으니 리스너 스레드는 종료.
+                        }
+                    } else if (msg instanceof GameState) {
                         currentGameState = (GameState) msg;
                     } else if (msg instanceof LoginResponse) {
                         handleLoginResponse((LoginResponse) msg);

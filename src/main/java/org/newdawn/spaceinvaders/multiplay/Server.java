@@ -88,35 +88,45 @@ public class Server implements Runnable{
     }
 
     private void sendUpdatesToAll() {
-        TreeMap<Integer, ServerGame.Entity> originEntities = serverGame.getEntities();
-        TreeMap<Integer, ServerGame.Entity> entitiesCopy;
 
-        synchronized (originEntities){
-            entitiesCopy = new TreeMap<>(originEntities);
-        }
-        for (final ClientHandler clientHandler:clientHandlers){
-            int lives = 3;
-            int score = 0;
 
-            Integer pid = clientHandler.getPlayershipId();
-            if (pid != null && pid >= 0){
-                PlayerData pd = playerDataMap.get(pid);
-                if (pd != null){
-                    lives = pd.getLives();
-                    score = pd.getScore();
+        if (serverGame.isBossClear()) {
+            for (final ClientHandler clientHandler : clientHandlers) {
+                // "VICTORY" 글자를 보낸다.
+                clientHandler.sendUpdate("VICTORY");
+            }
+        }{
+            TreeMap<Integer, ServerGame.Entity> originEntities = serverGame.getEntities();
+            TreeMap<Integer, ServerGame.Entity> entitiesCopy;
+
+            synchronized (originEntities) {
+                entitiesCopy = new TreeMap<>(originEntities);
+            }
+            for (final ClientHandler clientHandler : clientHandlers) {
+                int lives = 3;
+                int score = 0;
+
+                Integer pid = clientHandler.getPlayershipId();
+                if (pid != null && pid >= 0) {
+                    PlayerData pd = playerDataMap.get(pid);
+                    if (pd != null) {
+                        lives = pd.getLives();
+                        score = pd.getScore();
+                    }
+                }
+                GameState currentState = new GameState(entitiesCopy, score, lives, GameState.GameStatus.PLAYING);
+                try {
+                    clientHandler.sendUpdate(currentState);
+                } catch (RuntimeException e) {
+                    toRemove.add(clientHandler);
                 }
             }
-            GameState currentState = new GameState(entitiesCopy,score,lives, GameState.GameStatus.PLAYING);
-            try {
-                clientHandler.sendUpdate(currentState);
-            } catch (RuntimeException e) {
-                toRemove.add(clientHandler);
+            for (ClientHandler ch : toRemove) {
+                onClientDisconnected(ch);
             }
         }
-        for (ClientHandler ch:toRemove){
-            onClientDisconnected(ch);
-        }
     }
+
 
     // Server.java 파일
 
@@ -152,6 +162,10 @@ public class Server implements Runnable{
     public Map<Integer, PlayerData> getPlayerDataMap(){ return playerDataMap; }
 
     public Login getLoginHost(){ return loginHost; }
+
+    public void setStatus(){
+
+    }
 
     // server to one client
 
