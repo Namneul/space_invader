@@ -12,7 +12,7 @@ public class ServerMeteoriteEntity extends ServerGame.Entity {
 
 
     public ServerMeteoriteEntity(ServerGame game, double x, double y) {
-        super(game, 25, 25, x, y);
+        super(game, 64, 64, x, y);
         moveSpeed = 300;
         dy = moveSpeed;
         this.type = ServerGame.EntityType.METEOR;

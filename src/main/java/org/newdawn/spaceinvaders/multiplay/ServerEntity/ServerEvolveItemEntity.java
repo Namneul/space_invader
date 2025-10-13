@@ -8,7 +8,7 @@ public class ServerEvolveItemEntity extends ServerGame.Entity {
 
 
     public ServerEvolveItemEntity(ServerGame game, double x, double y) {
-        super(game, 10, 10, x, y);
+        super(game, 29, 26, x, y);
         moveSpeed = 200;
         dy = moveSpeed;
         this.type = ServerGame.EntityType.ITEM;

@@ -22,6 +22,12 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
     @Override
     public void tick() {
         super.tick();
+        if (getX()<0){
+            setX(0);
+        }
+        if (getX()>800-getWidth()){
+            setX(800-getWidth());
+        }
     }
 
     public void upgrade(){
@@ -85,6 +91,7 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
             this.applyStun(1500);
         } else if (otherEntity instanceof ServerLaserEntity) {
             game.notifyDeath(this.getId());
+            resetUpgrade();
         }
     }
 }

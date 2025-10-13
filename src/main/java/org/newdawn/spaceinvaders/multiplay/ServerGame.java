@@ -22,6 +22,8 @@ public class ServerGame {
 
     private boolean logicUpdateRequested = false;
 
+    private boolean bossLogicUpdateRequested = false;
+
     private ArrayList<Integer> removeList = new ArrayList<>();
 
     private Server server;
@@ -149,7 +151,7 @@ public class ServerGame {
         for (final Entity entity: entitiesCopy.values()){
             entity.tick();
         }
-        if (currentStageIndex>3 && Math.random()<0.003){
+        if (currentStageIndex>2 && Math.random()<0.003){
             spawnMeteor();
         }
         if (logicUpdateRequested){
@@ -158,11 +160,17 @@ public class ServerGame {
                     ((ServerAlienEntity) entity).doLogic();
                 } else if (entity instanceof ServerReflectAlienEntity){
                     ((ServerReflectAlienEntity) entity).doLogic();
-                } else if (entity instanceof ServerBossEntity) {
-                    ((ServerBossEntity) entity).doLogic();
                 }
             }
             this.logicUpdateRequested = false;
+        }
+        if (bossLogicUpdateRequested){
+            for (Entity entity: entities.values()){
+                if (entity instanceof ServerBossEntity){
+                    ((ServerBossEntity) entity).doLogic();
+                }
+            }
+            this.bossLogicUpdateRequested = false;
         }
 
         for (final Entity entity1 : entitiesCopy.values()) {
@@ -232,7 +240,7 @@ public class ServerGame {
     }
 
     public void notifyWin() {
-        if (currentStageIndex == 0){
+        if (currentStageIndex == 4){
             ServerBossEntity boss = new ServerBossEntity(this, 400, 50);
             entities.put(boss.getId(), boss);
             return;
@@ -280,6 +288,9 @@ public class ServerGame {
 
     public void requestLogicUpdate(){
         logicUpdateRequested = true;
+    }
+    public void requestBossLogicUpdate(){
+        bossLogicUpdateRequested = true;
     }
 
     public void processPlayerInput(int playerShipId, PlayerInput receivedInput){

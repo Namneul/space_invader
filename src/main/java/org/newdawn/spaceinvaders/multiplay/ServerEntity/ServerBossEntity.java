@@ -7,8 +7,6 @@ import java.awt.Rectangle;
 
 public class ServerBossEntity extends ServerGame.Entity {
 
-    private int maxHP = 5000;
-    private int currentHP;
 
     private enum Pattern { SUMMON_MINIONS, SHOTGUN_BLAST, LASER_BEAM }
     private Pattern currentPattern;
@@ -22,8 +20,9 @@ public class ServerBossEntity extends ServerGame.Entity {
     private int frameNumber;
 
     public ServerBossEntity(ServerGame game, int x, int y) {
-        super(game, 100, 100, x, y); // 네 Entity 생성자 그대로 사용
-        this.currentHP = maxHP;
+        super(game, 120, 100, x, y); // 네 Entity 생성자 그대로 사용
+        maxHP = 5000;
+        currentHP = maxHP;
         this.moveSpeed = 50;
         this.dx = moveSpeed;
         this.type = ServerGame.EntityType.BOSS;
@@ -43,7 +42,7 @@ public class ServerBossEntity extends ServerGame.Entity {
     @Override
     public void tick() {
         if (dx<0 && getX()<10 || dx>0 && getX()>700){
-            this.game.requestLogicUpdate();
+            this.game.requestBossLogicUpdate();
         }
         if (isCharging) {
             frameNumber = 1;

@@ -223,6 +223,22 @@ public class Game extends Canvas {
                             case ALIEN:
                                 int frame = ((ServerAlienEntity) entity).getFrameNumber();
                                 spriteToDraw = this.alienFrames[frame];
+
+                                int barWidth = 40;
+                                int barHeight = 3;
+                                int barx = (int)entity.getX();
+                                int bary = (int)entity.getY() +(int)entity.getHeight() + 2;
+
+                                int alienMaxHp = entity.getMaxHP();
+                                int alienCurrentHp = entity.getCurrentHP();
+                                double healthPercent = (double)alienCurrentHp / alienMaxHp;
+
+                                g.setColor(Color.red);
+                                g.fillRect(barx, bary, barWidth, barHeight);
+
+                                g.setColor(Color.green);
+                                g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
+
                                 break;
                             case REFLECT_ALIEN:
                                 ServerReflectAlienEntity reflectAlien = (ServerReflectAlienEntity) entity;
@@ -242,38 +258,74 @@ public class Game extends Canvas {
                                 int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
                                 spriteToDraw = this.meteorFrames[frameNumber];
                                 break;
-                            case BOSS:
-                                int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
-                                if (bossFrame == 1){
-                                    spriteToDraw = this.bossChargingSprite;
-                                } else{
-                                    spriteToDraw = this.bossSprite;
+//                            case BOSS:
+//                                int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
+//                                if (bossFrame == 1){
+//                                    spriteToDraw = this.bossSprite;
+//                                    spriteToDraw.draw(g,(int)entity.getX(),(int)entity.getY());
+//                                    spriteToDraw = this.bossChargingSprite;
+//                                    spriteToDraw.draw(g,(int)entity.getX()+(int)entity.getWidth()/2,(int)entity.getY()+(int)entity.getHeight());
+//                                    spriteToDraw = null;
+//                                } else{
+//                                    spriteToDraw = this.bossSprite;
+//                                }
+//                                int bossBarWidth = 120;
+//                                int bossBarHeight = 3;
+//                                int bossBarx = (int)entity.getX()+10;
+//                                int bossBary = (int)entity.getY() +(int)entity.getHeight() + 2;
+//
+//                                int bossMaxHp = entity.getMaxHP();
+//                                int bossCurrentHp = entity.getCurrentHP();
+//                                double bossHealthPercent = (double)bossCurrentHp / bossMaxHp;
+//
+//                                g.setColor(Color.red);
+//                                g.fillRect(bossBarx, bossBary, bossBarWidth, bossBarHeight);
+//
+//                                g.setColor(Color.green);
+//                                g.fillRect(bossBarx, bossBary, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
+//                                break;
+                                case BOSS:
+                                int bossFrame = ((ServerBossEntity)entity).getFrameNumber();
+                                Sprite baseSprite = this.bossSprite;
+                                Sprite effectSprite = (bossFrame == 1) ? this.bossChargingSprite : null; // 충전 중일 때만 effectSprite가 있다.
+
+                                if (baseSprite != null) {
+                                    baseSprite.draw(g, (int)entity.getX(), (int)entity.getY());
                                 }
-                                if (spriteToDraw != null){
-                                    spriteToDraw.draw(g, (int)entity.getX(), (int)entity.getY());
+                                if (effectSprite != null) {
+                                    int effectX = (int)entity.getX() + (baseSprite.getWidth() / 2) - (effectSprite.getWidth() / 2);
+                                    int effectY = (int)entity.getY() + (baseSprite.getHeight() / 2) - (effectSprite.getHeight() / 2);
+                                    effectSprite.draw(g, effectX, effectY);
                                 }
                                 int maxHP = entity.getMaxHP();
                                 int currentHP = entity.getCurrentHP();
 
-                                // 3. 체력바의 위치와 크기를 정한다.
-                                if (maxHP > 0 && spriteToDraw != null) {
-                                    int barWidth = 100; // 체력바 너비
-                                    int barHeight = 10; // 체력바 높이
-                                    int barX = (int)entity.getX() + (spriteToDraw.getWidth() / 2) - (barWidth / 2);
-                                    int barY = (int)entity.getY() + spriteToDraw.getHeight() +150;
+                                if (maxHP > 0) {
+                                    int bossBarWidth = 100; // 체력바 너비
+                                    int bossBarHeight = 10; // 체력바 높이
 
+                                    // ★★★ 여기가 핵심! 보스 머리 위로 위치를 옮긴다 ★★★
+                                    // X 좌표: 보스 중앙에 맞춰 정렬
+                                    int barX = (int)entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
+                                    // Y 좌표: 보스 머리 위 15픽셀 지점
+                                    int barY = (int)entity.getY() - 15;
+
+                                    // 배경 (빨간색)
                                     g.setColor(Color.RED);
-                                    g.fillRect(barX, barY, barWidth, barHeight);
+                                    g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
 
-                                    double healthPercent = (double)currentHP / maxHP;
+                                    // 현재 체력 (녹색)
+                                    double bossHealthPercent = (double)currentHP / maxHP;
                                     g.setColor(Color.GREEN);
-                                    g.fillRect(barX, barY, (int)(barWidth * healthPercent), barHeight);
+                                    g.fillRect(barX, barY, (int)(bossBarWidth * bossHealthPercent), bossBarHeight);
 
+                                    // 테두리
                                     g.setColor(Color.WHITE);
-                                    g.drawRect(barX, barY, barWidth, barHeight);
+                                    g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
                                 }
                                 spriteToDraw = null;
                                 break;
+
                             case LASER:
                                 spriteToDraw = this.bossLaserSprite;
                                 break;

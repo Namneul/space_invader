@@ -8,15 +8,14 @@ public class ServerAlienEntity extends ServerGame.Entity {
     private long lastFrameChange;
     private long frameDuration = 250;
     private int frameNumber;
-    private final int maxHP = 200;
-    private int currentHP;
 
     public ServerAlienEntity(ServerGame serverGame, int x, int y){
-        super(serverGame,20,20,x, y);
+        super(serverGame,43,29,x, y);
         moveSpeed = 75;
         dx = -moveSpeed;
         this.type = ServerGame.EntityType.ALIEN;
-        currentHP = this.maxHP;
+        maxHP = 200;
+        currentHP = maxHP;
     }
 
 
@@ -37,12 +36,13 @@ public class ServerAlienEntity extends ServerGame.Entity {
             }
         }
 
-        if (Math.random()< 0.000001){
+        if (Math.random()< 0.001){
             game.alienFires(this);
         }
     }
 
     public void setHP(int hp){
+        maxHP = hp;
         this.currentHP = hp;
     }
 
