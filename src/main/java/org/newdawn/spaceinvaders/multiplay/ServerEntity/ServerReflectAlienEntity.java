@@ -19,6 +19,7 @@ public class ServerReflectAlienEntity extends ServerGame.Entity {
         }
     }
 
+
     public void setMoveSpeed(double moveSpeed){
         this.moveSpeed = moveSpeed;
     }

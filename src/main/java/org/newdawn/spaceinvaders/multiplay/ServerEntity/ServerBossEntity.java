@@ -42,7 +42,9 @@ public class ServerBossEntity extends ServerGame.Entity {
 
     @Override
     public void tick() {
-        // 레이저 패턴 상태 관리 (이건 보스 스스로 해야 함)
+        if (dx<0 && getX()<10 || dx>0 && getX()>700){
+            this.game.requestLogicUpdate();
+        }
         if (isCharging) {
             frameNumber = 1;
             if (System.currentTimeMillis() - laserPhaseStartTime > 2000) {
@@ -67,7 +69,7 @@ public class ServerBossEntity extends ServerGame.Entity {
 
         // 일반 이동 및 패턴 실행 타이머
         if (!isCharging && !isFiringLaser) {
-            setX(getX() + dx / Server.TICKS_PER_SECOND);
+            super.tick();
             if (System.currentTimeMillis() - lastPatternTime > patternCooldown) {
                 executePattern();
             }
@@ -87,6 +89,9 @@ public class ServerBossEntity extends ServerGame.Entity {
             game.removeEntity(this.getId());
         }
         game.removeEntity(otherEntity.getId());
+        if (Math.random()<0.2){
+            game.itemDrop(this);
+        }
     }
 
 

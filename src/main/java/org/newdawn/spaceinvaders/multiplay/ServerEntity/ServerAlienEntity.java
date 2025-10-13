@@ -22,7 +22,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
 
     @Override
     public void tick() {
-        setX(getX()+dx/ Server.TICKS_PER_SECOND);
+        super.tick();
         if (dx<0 && getX()<10 || dx>0 && getX()>750){
             this.game.requestLogicUpdate();
         }
@@ -40,6 +40,10 @@ public class ServerAlienEntity extends ServerGame.Entity {
         if (Math.random()< 0.000001){
             game.alienFires(this);
         }
+    }
+
+    public void setHP(int hp){
+        this.currentHP = hp;
     }
 
     public void hit(ServerGame.Entity otherEntity,int dmg){

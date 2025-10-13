@@ -71,6 +71,11 @@ public class ServerGame {
             this.y = y;
         }
 
+
+        public void setHorizontalMovement(double dx){
+            this.dx = dx;
+        }
+
         public int getCurrentHP(){return currentHP; }
         public int getMaxHP(){return maxHP; }
 
@@ -104,7 +109,10 @@ public class ServerGame {
 
         public double getMoveSpeed(){ return moveSpeed; }
 
-        public abstract void tick();
+        public void tick(){
+            this.x += this.dx / Server.TICKS_PER_SECOND;
+            this.y += this.dy / Server.TICKS_PER_SECOND;
+        };
 
         public EntityType getType(){
             return this.type;
@@ -184,6 +192,11 @@ public class ServerGame {
 
         alienCount--;
         if (alienCount <= 0){
+            for(Entity entity: entities.values()){
+                if (entity instanceof ServerReflectAlienEntity){
+                    removeEntity(entity.getId());
+                }
+            }
             notifyWin();
         }
 
@@ -219,7 +232,7 @@ public class ServerGame {
     }
 
     public void notifyWin() {
-        if (currentStageIndex == 4){
+        if (currentStageIndex == 0){
             ServerBossEntity boss = new ServerBossEntity(this, 400, 50);
             entities.put(boss.getId(), boss);
             return;
@@ -281,12 +294,12 @@ public class ServerGame {
         switch (receivedInput.getAction()){
             case MOVE_LEFT:
                 if (!playerShipEntity.isPlayerStunned()){
-                playerShip.setX(playerShip.getX()-5);
+                    playerShip.setHorizontalMovement(-playerShip.getMoveSpeed());
                 }
                 break;
             case MOVE_RIGHT:
                 if (!playerShipEntity.isPlayerStunned()){
-                playerShip.setX(playerShip.getX()+5);
+                    playerShip.setHorizontalMovement(playerShip.getMoveSpeed());
                 }
                 break;
             case FIRE:
@@ -295,6 +308,7 @@ public class ServerGame {
                 }
                 break;
             case STOP:
+                playerShip.setHorizontalMovement(0);
                 break;
         }
     }
@@ -349,6 +363,7 @@ public class ServerGame {
         for (int i = 0; i < 5; i++) {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
             ServerAlienEntity minion = new ServerAlienEntity(this, bossX - 100 + (i * 50), bossY + 50);
+            minion.setHP(50);
             entities.put(minion.getId(), minion);
             alienCount++;
         }

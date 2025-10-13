@@ -68,6 +68,10 @@ public class Game extends Canvas {
     private volatile GameState currentGameState; // 서버가 보내주는 최신 게임 상태
     private final int MAX_LIVES = 3; // UI 그리기를 위한 상수
 
+    private boolean leftPressed = false;
+    private boolean rightPressed = false;
+    private boolean firePressed = false;
+
     private LoginFrame loginFrame;
     private Process singlePlayServerProcess;
 
@@ -178,6 +182,19 @@ public class Game extends Canvas {
         long last = System.currentTimeMillis();
         while (isGameLoopRunning) {
 
+            if (leftPressed){
+                sendToServer(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
+            }
+            if (rightPressed){
+                sendToServer(new PlayerInput(PlayerInput.Action.MOVE_RIGHT));
+            }
+            if (firePressed){
+                sendToServer(new PlayerInput(PlayerInput.Action.FIRE));
+            }
+            if (!leftPressed && !rightPressed){
+                sendToServer(new PlayerInput(PlayerInput.Action.STOP));
+            }
+
             long now = System.currentTimeMillis();
             long delta = now - last;
 
@@ -232,7 +249,7 @@ public class Game extends Canvas {
                                 } else{
                                     spriteToDraw = this.bossSprite;
                                 }
-                                if (spriteToDraw == null){
+                                if (spriteToDraw != null){
                                     spriteToDraw.draw(g, (int)entity.getX(), (int)entity.getY());
                                 }
                                 int maxHP = entity.getMaxHP();
@@ -242,16 +259,12 @@ public class Game extends Canvas {
                                 if (maxHP > 0 && spriteToDraw != null) {
                                     int barWidth = 100; // 체력바 너비
                                     int barHeight = 10; // 체력바 높이
-                                    // 보스 스프라이트 바로 아래에 가운데 정렬
                                     int barX = (int)entity.getX() + (spriteToDraw.getWidth() / 2) - (barWidth / 2);
-                                    int barY = (int)entity.getY() + spriteToDraw.getHeight() + 5;
+                                    int barY = (int)entity.getY() + spriteToDraw.getHeight() +150;
 
-                                    // 4. 체력바를 그린다!
-                                    // 배경 (빨간색)
                                     g.setColor(Color.RED);
                                     g.fillRect(barX, barY, barWidth, barHeight);
 
-                                    // 현재 체력 (녹색)
                                     double healthPercent = (double)currentHP / maxHP;
                                     g.setColor(Color.GREEN);
                                     g.fillRect(barX, barY, (int)(barWidth * healthPercent), barHeight);
@@ -259,6 +272,7 @@ public class Game extends Canvas {
                                     g.setColor(Color.WHITE);
                                     g.drawRect(barX, barY, barWidth, barHeight);
                                 }
+                                spriteToDraw = null;
                                 break;
                             case LASER:
                                 spriteToDraw = this.bossLaserSprite;
@@ -317,46 +331,32 @@ public class Game extends Canvas {
     private class KeyInputHandler extends KeyAdapter {
         public void keyPressed(KeyEvent e) {
 
-            if (outputStream == null) return;
-
-            try {
-                PlayerInput.Action action = null;
-                switch (e.getKeyCode()){
-                    case KeyEvent.VK_LEFT:
-                        action = PlayerInput.Action.MOVE_LEFT;
-                        break;
-                    case KeyEvent.VK_RIGHT:
-                        action = PlayerInput.Action.MOVE_RIGHT;
-                        break;
-                    case KeyEvent.VK_SPACE:
-                        action = PlayerInput.Action.FIRE;
-                        break;
-                }
-
-                if (action != null){
-                    outputStream.writeObject(new PlayerInput(action));
-                    outputStream.reset();
-                    outputStream.flush();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT:
+                    leftPressed = true;
+                    break;
+                case KeyEvent.VK_RIGHT:
+                    rightPressed = true;
+                    break;
+                case KeyEvent.VK_SPACE:
+                    firePressed = true;
+                    break;
             }
         }
-
         /**
          * Notification from AWT that a key has been released.
          *
          * @param e The details of the key that was released
          */
         public void keyReleased(KeyEvent e) {
-            if (outputStream == null) return;
-            try {
-                if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_RIGHT){
-                    outputStream.writeObject(new PlayerInput(PlayerInput.Action.STOP));
-                    outputStream.reset();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                leftPressed = false;
+            }
+            if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                rightPressed = false;
+            }
+            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                firePressed = false;
             }
         }
     }
@@ -507,7 +507,7 @@ public class Game extends Canvas {
 
 
                     // 서버가 완전히 켜질 때까지 잠시 대기
-                    Thread.sleep(500); // 0.5초
+                    Thread.sleep(1000); // 0.5초
 
                     // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
                     Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());

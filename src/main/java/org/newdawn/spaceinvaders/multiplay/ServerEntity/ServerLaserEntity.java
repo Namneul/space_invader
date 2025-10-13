@@ -9,7 +9,7 @@ public class ServerLaserEntity extends ServerGame.Entity {
     private final long creationTime;
 
     public ServerLaserEntity(ServerGame game, ServerBossEntity owner) {
-        super(game, 20, 600, 0, 0);
+        super(game, 50, 600, 0, 0);
         this.owner = owner;
         this.type = ServerGame.EntityType.LASER;
         this.creationTime = System.currentTimeMillis();

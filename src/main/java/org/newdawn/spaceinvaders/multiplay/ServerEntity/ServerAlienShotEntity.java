@@ -10,6 +10,7 @@ public class ServerAlienShotEntity extends ServerGame.Entity {
         super(game, 10, 10, x, y);
         this.type = ServerGame.EntityType.ALIEN_SHOT;
         moveSpeed = 300;
+        dy = moveSpeed;
     }
 
     public void setHorizontalMovement(double dx){
@@ -18,8 +19,7 @@ public class ServerAlienShotEntity extends ServerGame.Entity {
 
     @Override
     public void tick() {
-        setX(getX()+dx/ Server.TICKS_PER_SECOND);
-        setY(getY()+moveSpeed/ Server.TICKS_PER_SECOND);
+        super.tick();
         if (getY() > 600 || getY() < -50 || getX() < -50 || getX() > 850){ this.game.removeEntity(this.getId()); }
     }
 

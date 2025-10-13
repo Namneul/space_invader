@@ -14,11 +14,14 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
     public ServerPlayerShipEntity(ServerGame serverGame, double x, double y) {
         super(serverGame,30,30, x, y);
         this.type = ServerGame.EntityType.PLAYER;
+        moveSpeed = 250;
+        dx = moveSpeed;
     }
 
 
     @Override
     public void tick() {
+        super.tick();
     }
 
     public void upgrade(){

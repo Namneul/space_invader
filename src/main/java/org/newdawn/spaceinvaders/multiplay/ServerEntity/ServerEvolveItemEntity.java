@@ -10,12 +10,13 @@ public class ServerEvolveItemEntity extends ServerGame.Entity {
     public ServerEvolveItemEntity(ServerGame game, double x, double y) {
         super(game, 10, 10, x, y);
         moveSpeed = 200;
+        dy = moveSpeed;
         this.type = ServerGame.EntityType.ITEM;
     }
 
     @Override
     public void tick() {
-        setY(getY()+moveSpeed/ Server.TICKS_PER_SECOND);
+        super.tick();
         if (getY()>700){
             game.removeEntity(this.getId());
         }
