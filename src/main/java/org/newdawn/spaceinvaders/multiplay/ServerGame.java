@@ -233,6 +233,7 @@ public class ServerGame {
 
             if (deadPlayerData.getLives() <= 0){
                 removeEntity(deadPlayerId);
+                    server.getLoginHost().insertScore(deadPlayerData.getId(), deadPlayerData.getScore());
             } else {
                 Entity ship = entities.get(deadPlayerId);
                 if (ship != null){
@@ -385,14 +386,11 @@ public class ServerGame {
         if (killerData != null) {
             killerData.increaseBossKilledScore();
         }
+        server.getLoginHost().insertScore(killerData.getId(), killerData.getScore());
         System.out.println("보스 처치! 최종 승리!");
 
-        // 점수를 데이터베이스에 저장합니다.
-        for (PlayerData data : server.getPlayerDataMap().values()) {
-            server.getLoginHost().insertScore(data.getId(), data.getScore());
-        }
 
-        // 게임이 끝났다는 것을 알리는 플래그를 설정합니다.
+
         this.bossClear = true;
     }
 
@@ -423,6 +421,8 @@ public class ServerGame {
         ServerLaserEntity laser = new ServerLaserEntity(this, boss);
         entities.put(laser.getId(), laser);
     }
+
+
 
     private int getSmallestAvailableId() {return smallestAvailableId++;}
 

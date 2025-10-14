@@ -38,7 +38,7 @@ public class ClientHandler implements Runnable {
 
     public void run() {
         try {
-            if (isSinglePlayer && !joined) {
+            if (!joined) {
                 System.out.println("[핸들러 로그] 싱글플레이어 자동 참가 로직 실행.");
                 this.joined = true;
                 this.playershipId = serverGame.spawnPlayerEntity();
@@ -51,45 +51,58 @@ public class ClientHandler implements Runnable {
                 Object receivedInput = inputStream.readObject();
 
                 if (receivedInput instanceof LoginRequest) {
-                    LoginRequest request = (LoginRequest) receivedInput;
-                    boolean success = loginHost.login(request.getUsername(), request.getPassword());
-                    if (success) {
-                        this.pendingUsername = request.getUsername();
-                        System.out.println("Server: login ok for " + request.getUsername());
+                    LoginRequest req = (LoginRequest) receivedInput;
+                    boolean ok = loginHost.login(req.getUsername(), req.getPassword());
+
+                    // ▼▼▼ 여기가 핵심! ▼▼▼
+                    if (ok) {
+                        // 1. 로그인에 성공하면, 이 핸들러에 연결된 플레이어의 이름을 가져온다.
+                        String newName = req.getUsername();
+
+                        // 2. 서버의 중앙 명단(playerDataMap)에 있는 플레이어 정보를 찾아서
+                        //    이름을 새 이름으로 '확실하게' 업데이트한다.
+                        server.getPlayerDataMap().computeIfPresent(this.playershipId, (id, playerData) -> {
+                            playerData.setName(newName); // PlayerData 객체의 이름을 변경
+                            return playerData; // 변경된 PlayerData 객체를 반환
+                        });
+
+                        System.out.println("로그인 성공! 플레이어 ID " + this.playershipId + "의 이름이 '" + newName + "'(으)로 업데이트 되었습니다.");
                     }
 
-                    LoginResponse response = new LoginResponse(success, request.getUsername());
-                    outputStream.writeObject(response);
+                    // 3. 클라이언트에게 로그인 성공 여부를 알려준다.
+                    outputStream.writeObject(new LoginResponse(ok, req.getUsername()));
+                    continue; // 로그인 처리는 끝났으므로 다음 루프로 넘어간다.
                 } else if (receivedInput instanceof SignUpRequest) {
-                    SignUpRequest request = (SignUpRequest) receivedInput;
-                    boolean success = loginHost.signUp(request.getUsername(), request.getPassword());
-                    if (success) {
-                        PlayerData playerData = new PlayerData(request.getUsername());
-                        server.getPlayerDataMap().put(this.playershipId, playerData);
+                    SignUpRequest req = (SignUpRequest) receivedInput;
+                    boolean ok = loginHost.signUp(req.getUsername(), req.getPassword());
+                    if (ok) {
+                        this.pendingUsername = req.getUsername(); // 매핑은 로그인/조인 시!
                     }
-                    String message = success ? "Sgin up sccessful!" : "Username already exist";
-                    SignUpResponse response = new SignUpResponse(success, message);
-                    outputStream.writeObject(response);
+                    outputStream.writeObject(new SignUpResponse(ok, ok ? "Sign up successful!" : "Username already exists"));
                 } else if (receivedInput instanceof RankRequest) {
                     RankResponse response = new RankResponse(loginHost.getAllScore());
                     outputStream.writeObject(response);
                 } else if (receivedInput instanceof PlayerInput) {
-
+                    // 로그인(= pendingUsername 세팅) 전에는 조인/스폰 금지
                     if (!joined) {
+                        if (pendingUsername == null) {
+                            // 로그인 아직 안 됨: 입력만 무시(또는 큐에 임시 저장)
+                            // System.out.println("입력 무시: 로그인 전");
+                            continue;
+                        }
+                        // 로그인 완료라면 여기서 조인(보조 안전장치)
                         joined = true;
                         if (this.playershipId < 0) {
-                            int spawned = serverGame.spawnPlayerEntity();
-                            this.playershipId = spawned;
-
-                            String name = (pendingUsername != null) ? pendingUsername : "guest";
-                            server.getPlayerDataMap().putIfAbsent(this.playershipId, new PlayerData(name));
-                            System.out.println("Server: 플레이어 생성 완료. Id=" + this.playershipId + ", name=" + name);
+                            this.playershipId = serverGame.spawnPlayerEntity();
                         }
+                        server.getPlayerDataMap().put(this.playershipId, new PlayerData(pendingUsername));
+                        System.out.println("Server: PlayerInput 시 조인. Id=" + this.playershipId + ", name=" + pendingUsername);
                         server.onPlayerJoined(this);
                     }
 
                     serverGame.processPlayerInput(this.playershipId, (PlayerInput) receivedInput);
                 }
+
             }
         } catch (IOException | ClassNotFoundException e) {
             // 클라이언트 연결이 끊기는 등 예외가 발생하면 루프가 종료되고 이 부분이 실행됩니다.
@@ -118,6 +131,17 @@ public class ClientHandler implements Runnable {
             server.onClientDisconnected(this);
         }
     }
+
+    private void applyNameToPlayer(String name) {
+        if (this.playershipId < 0) return; // 아직 스폰 전이면 조인 시 반영됨
+        server.getPlayerDataMap().compute(this.playershipId, (id, old) -> {
+            if (old == null) return new PlayerData(name);
+            old.setName(name);               // PlayerData#setName 사용
+            return old;
+        });
+        System.out.println("[NAME] id=" + this.playershipId + ", name=" + name);
+    }
+
 
 
 }

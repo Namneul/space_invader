@@ -22,6 +22,8 @@ public class PlayerData {
 
     public void setPassword(String pw){ this.password = pw; }
 
+    public void setName(String name){this.id = name;}
+
     public int getScore(){ return score; }
 
     public int getLives(){ return lives; }
