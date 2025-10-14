@@ -244,22 +244,40 @@ public class ServerGame {
     }
 
     public void notifyWin() {
-        if (currentStageIndex == 4){
-            ServerBossEntity boss = new ServerBossEntity(this, 400, 50);
-            entities.put(boss.getId(), boss);
-            return;
+        // 현재 스테이지가 5스테이지(인덱스 4)의 첫 웨이브였다면, 보스를 생성합니다.
+        if (currentStageIndex == 4) {
+            // 보스가 아직 없다면 보스를 생성
+            boolean bossExists = false;
+            for (Entity e : entities.values()) {
+                if (e instanceof ServerBossEntity) {
+                    bossExists = true;
+                    break;
+                }
+            }
+            if (!bossExists) {
+                System.out.println("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
+                ServerBossEntity boss = new ServerBossEntity(this, 350, 50);
+                entities.put(boss.getId(), boss);
+                return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
+            }
         }
-        currentStageIndex++; // 다음 스테이지로 인덱스 증가
-        // 만약 마지막 스테이지까지 클리어했다면
+
+        currentStageIndex++; // 다음 스테이지로 인덱스를 증가시킵니다.
+
+        // 만약 마지막 스테이지까지 모두 클리어했다면
         if (currentStageIndex >= stages.size()) {
-            System.out.println("All Clear!");
-            for (PlayerData data:server.getPlayerDataMap().values()){
+            System.out.println("[서버 로그] 모든 스테이지 클리어! 게임에서 승리했습니다.");
+            // 점수 저장 로직
+            for (PlayerData data : server.getPlayerDataMap().values()) {
                 server.getLoginHost().insertScore(data.getId(), data.getScore());
             }
-            this.bossClear = true;
-            // 다음 스테이지가 있다면, 새 스테이지 객체를 가져오고 게임을 다시 시작
+            this.bossClear = true; // 게임 승리 플래그를 설정합니다.
+        }
+        // 다음 스테이지가 남아있다면
+        else {
+            System.out.println("[서버 로그] 다음 스테이지(" + (currentStageIndex + 1) + ")를 시작합니다.");
             currentStage = stages.get(currentStageIndex);
-            currentStage.initialize(this, entities);
+            currentStage.initialize(this, entities); // 다음 스테이지의 적들을 생성합니다.
         }
     }
 
@@ -362,14 +380,20 @@ public class ServerGame {
     }
 
 
-    public void notifyBossKilled(Entity boss, int killerId){
+    public void notifyBossKilled(Entity boss, int killerId) {
         PlayerData killerData = server.getPlayerDataMap().get(killerId);
-        if (killerData != null){
+        if (killerData != null) {
             killerData.increaseBossKilledScore();
-            }
-        System.out.println("보스 처치");
-        currentStageIndex++;
-        notifyWin();
+        }
+        System.out.println("보스 처치! 최종 승리!");
+
+        // 점수를 데이터베이스에 저장합니다.
+        for (PlayerData data : server.getPlayerDataMap().values()) {
+            server.getLoginHost().insertScore(data.getId(), data.getScore());
+        }
+
+        // 게임이 끝났다는 것을 알리는 플래그를 설정합니다.
+        this.bossClear = true;
     }
 
     public void bossSummonsMinions(int bossX, int bossY) {
