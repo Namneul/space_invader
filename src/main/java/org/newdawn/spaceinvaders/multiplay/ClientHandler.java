@@ -54,13 +54,9 @@ public class ClientHandler implements Runnable {
                     LoginRequest req = (LoginRequest) receivedInput;
                     boolean ok = loginHost.login(req.getUsername(), req.getPassword());
 
-                    // ▼▼▼ 여기가 핵심! ▼▼▼
                     if (ok) {
-                        // 1. 로그인에 성공하면, 이 핸들러에 연결된 플레이어의 이름을 가져온다.
                         String newName = req.getUsername();
 
-                        // 2. 서버의 중앙 명단(playerDataMap)에 있는 플레이어 정보를 찾아서
-                        //    이름을 새 이름으로 '확실하게' 업데이트한다.
                         server.getPlayerDataMap().computeIfPresent(this.playershipId, (id, playerData) -> {
                             playerData.setName(newName); // PlayerData 객체의 이름을 변경
                             return playerData; // 변경된 PlayerData 객체를 반환

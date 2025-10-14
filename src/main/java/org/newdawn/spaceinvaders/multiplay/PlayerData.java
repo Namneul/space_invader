@@ -9,7 +9,6 @@ public class PlayerData {
     public int lives;
 
     public PlayerData(String id){
-        this.id = id;
         this.score = 0;
         this.lives = 3;
     }
@@ -17,8 +16,6 @@ public class PlayerData {
     public String  getId(){ return id;}
 
     public String getPassword(){ return password; }
-
-    public void setId(String id){ this.id = id; }
 
     public void setPassword(String pw){ this.password = pw; }
 
