@@ -8,6 +8,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
     private long lastFrameChange;
     private long frameDuration = 250;
     private int frameNumber;
+    private boolean attacking = true;
 
     public ServerAlienEntity(ServerGame serverGame, int x, int y){
         super(serverGame,43,29,x, y);
@@ -35,15 +36,20 @@ public class ServerAlienEntity extends ServerGame.Entity {
                 frameNumber = 0;
             }
         }
-
-        if (Math.random()< 0.001){
-            game.alienFires(this);
+        if (attacking){
+            if (Math.random()< 0.001){
+                game.alienFires(this);
+            }
         }
     }
 
     public void setHP(int hp){
         maxHP = hp;
         this.currentHP = hp;
+    }
+
+    public void setAttacking(boolean attacking){
+        this.attacking = attacking;
     }
 
     public void hit(ServerGame.Entity otherEntity,int dmg){

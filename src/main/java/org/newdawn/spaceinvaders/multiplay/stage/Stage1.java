@@ -12,6 +12,8 @@ public class Stage1 extends Stage {
             for (int x = 0; x < 10; x++) {
                 ServerAlienEntity alien = new ServerAlienEntity(game, 100 + (x * 50), 50 + row * 30);
                 alien.setMoveSpeed(75); // 느린 속도
+                alien.setHP(50);
+                alien.setAttacking(false);
                 entities.put(alien.getId(), alien);
                 alienCount++;
             }

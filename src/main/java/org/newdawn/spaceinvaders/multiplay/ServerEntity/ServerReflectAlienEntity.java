@@ -37,7 +37,7 @@ public class ServerReflectAlienEntity extends ServerGame.Entity {
     public void handleCollision(ServerGame.Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity){
             game.removeEntity(otherEntity.getId());
-            game.alienFires(this);
+            game.notifyDeath(this.getId());
         }
     }
 }

@@ -210,7 +210,7 @@ public class ServerGame {
             notifyWin();
         }
 
-        if(Math.random()<0.5){
+        if(Math.random()<0.2){
             itemDrop(alien);
         }
         // if there are still some aliens left then they all need to get faster, so
