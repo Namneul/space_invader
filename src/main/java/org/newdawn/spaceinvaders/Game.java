@@ -746,16 +746,10 @@ public class Game extends Canvas {
 
     private void disconnectIfConnected() {
         synchronized (connLock) {
-            try { if (inputStream != null)  inputStream.close(); } catch (IOException ignored) {}
+            try { if (inputStream != null)  inputStream.close(); } catch (IOException ignored) {ignored.printStackTrace(); }
             try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) {}
             try { if (socket != null)       socket.close(); }      catch (IOException ignored) {}
             inputStream = null; outputStream = null; socket = null;
-        }
-    }
-
-    private boolean isConnected() {
-        synchronized (connLock) {
-            return socket != null && socket.isConnected() && !socket.isClosed();
         }
     }
 
