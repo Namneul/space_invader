@@ -814,9 +814,6 @@ public class Game extends Canvas {
     public ObjectOutputStream getOutputStream(){
         return outputStream;
     }
-    public ObjectInputStream getInputStream(){
-        return inputStream;
-    }
 
 
     /**
