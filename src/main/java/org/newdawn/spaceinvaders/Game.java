@@ -38,35 +38,35 @@ public class Game extends Canvas {
     //그리기 변수
     private JFrame container;
     private JPanel gamePanel;
-    private BufferStrategy strategy;
-    private final String windowTitle = "Space Invaders";
+    private transient BufferStrategy strategy;
+    private static final String windowTitle = "Space Invaders";
 
     // sprite 변수
-    private Sprite[] shipSprite = new Sprite[4];
-    private Sprite[] shotSprite = new Sprite[4];
-    private Sprite[] alienFrames = new Sprite[4];
-    private Sprite[] meteorFrames = new Sprite[16];
-    private Sprite redHeartSprite;
-    private Sprite greyHeartSprite;
-    private Sprite mainBackground;
-    private Sprite gameBackground;
-    private Sprite itemSprite;
-    private Sprite alienShotSprite;
-    private Sprite reflectAlienSprite;
-    private Sprite bossSprite;
-    private Sprite bossLaserSprite;
-    private Sprite bossChargingSprite;
+    private transient Sprite[] shipSprite = new Sprite[4];
+    private transient Sprite[] shotSprite = new Sprite[4];
+    private transient Sprite[] alienFrames = new Sprite[4];
+    private transient Sprite[] meteorFrames = new Sprite[16];
+    private transient Sprite redHeartSprite;
+    private transient Sprite greyHeartSprite;
+    private transient Sprite mainBackground;
+    private transient Sprite gameBackground;
+    private transient Sprite itemSprite;
+    private transient Sprite alienShotSprite;
+    private transient Sprite reflectAlienSprite;
+    private transient Sprite bossSprite;
+    private transient Sprite bossLaserSprite;
+    private transient Sprite bossChargingSprite;
 
     // 서버 변수
-    private Socket socket;
-    private ObjectOutputStream outputStream;
-    private ObjectInputStream inputStream;
+    private transient Socket socket;
+    private transient ObjectOutputStream outputStream;
+    private transient ObjectInputStream inputStream;
 
     // 게임 상태 변수
     private volatile boolean isGameLoopRunning = false;
     private volatile boolean isConnecting = false;
-    private volatile GameState currentGameState; // 서버가 보내주는 최신 게임 상태
-    private final int MAX_LIVES = 3; // UI 그리기를 위한 상수
+    private GameState currentGameState; // 서버가 보내주는 최신 게임 상태
+    private static final int MAX_LIVES = 3; // UI 그리기를 위한 상수
 
     private boolean leftPressed = false;
     private boolean rightPressed = false;
