@@ -72,8 +72,8 @@ public class Game extends Canvas {
     private boolean rightPressed = false;
     private boolean firePressed = false;
 
-    private LoginFrame loginFrame;
-    private Process singlePlayServerProcess;
+    private transient LoginFrame loginFrame;
+    private transient Process singlePlayServerProcess;
 
 
     public Game() {
@@ -90,6 +90,7 @@ public class Game extends Canvas {
         container.setResizable(false);
         container.setVisible(true);
         container.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
                 if (singlePlayServerProcess != null) singlePlayServerProcess.destroy();
                 System.exit(0);
@@ -170,192 +171,240 @@ public class Game extends Canvas {
     }
 
     public void gameLoop() {
-
         while (strategy == null) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
+                // SonarQube는 이 경고도 잡습니다.
+                // 스레드가 중단되었음을 알리는 것이 좋습니다.
+                Thread.currentThread().interrupt();
             }
         }
 
-        final  int targetMsPerFrame = 16;
-        long last = System.currentTimeMillis();
+        final int targetMsPerFrame = 16;
+
         while (isGameLoopRunning) {
-
-
-            if (leftPressed){
-                sendToServer(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
-            }
-            if (rightPressed){
-                sendToServer(new PlayerInput(PlayerInput.Action.MOVE_RIGHT));
-            }
-            if (firePressed){
-                sendToServer(new PlayerInput(PlayerInput.Action.FIRE));
-            }
-            if (!leftPressed && !rightPressed){
-                sendToServer(new PlayerInput(PlayerInput.Action.STOP));
-            }
-
             long now = System.currentTimeMillis();
-            long delta = now - last;
+
+            handleInput();
 
             Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-            g.setColor(Color.black);
-            g.fillRect(0, 0, 800, 600); // 배경 색
-            gameBackground.draw(g,0,0);
 
-            if (currentGameState == null){
-                g.setColor(Color.WHITE);
-                g.setFont(new Font("Serif", Font.BOLD, 30));
-                String waitMsg = "Waiting for another player...";
-                int strWidth = g.getFontMetrics().stringWidth(waitMsg);
-                g.drawString(waitMsg, (800 - strWidth) / 2, 300);
-            } else{
-
-                TreeMap<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
-                if (entitiesToDraw != null){
-                    for (ServerGame.Entity entity: entitiesToDraw.values()){
-                        Sprite spriteToDraw = null;
-                        switch (entity.getType()){
-                            case PLAYER:
-                                ServerPlayerShipEntity ship = (ServerPlayerShipEntity) entity;
-                                spriteToDraw = shipSprite[ship.getUpgradeCount()];
-                                break;
-                            case ALIEN:
-                                int frame = ((ServerAlienEntity) entity).getFrameNumber();
-                                spriteToDraw = this.alienFrames[frame];
-
-                                int barWidth = 40;
-                                int barHeight = 3;
-                                int barx = (int)entity.getX();
-                                int bary = (int)entity.getY() +(int)entity.getHeight() + 2;
-
-                                int alienMaxHp = entity.getMaxHP();
-                                int alienCurrentHp = entity.getCurrentHP();
-                                double healthPercent = (double)alienCurrentHp / alienMaxHp;
-
-                                g.setColor(Color.red);
-                                g.fillRect(barx, bary, barWidth, barHeight);
-
-                                g.setColor(Color.green);
-                                g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
-
-                                break;
-                            case REFLECT_ALIEN:
-                                ServerReflectAlienEntity reflectAlien = (ServerReflectAlienEntity) entity;
-                                spriteToDraw = this.reflectAlienSprite;
-                                break;
-                            case SHOT:
-                                ServerShotEntity shot = (ServerShotEntity) entity;
-                                spriteToDraw = shotSprite[shot.getUpgradeLevel()];
-                                break;
-                            case ITEM:
-                                spriteToDraw = this.itemSprite;
-                                break;
-                            case ALIEN_SHOT:
-                                spriteToDraw = this.alienShotSprite;
-                                break;
-                            case METEOR:
-                                int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
-                                spriteToDraw = this.meteorFrames[frameNumber];
-                                break;
-                                case BOSS:
-                                int bossFrame = ((ServerBossEntity)entity).getFrameNumber();
-                                Sprite baseSprite = this.bossSprite;
-                                Sprite effectSprite = (bossFrame == 1) ? this.bossChargingSprite : null; // 충전 중일 때만 effectSprite가 있다.
-
-                                if (baseSprite != null) {
-                                    baseSprite.draw(g, (int)entity.getX(), (int)entity.getY());
-                                }
-                                if (effectSprite != null) {
-                                    int effectX = (int)entity.getX() + (baseSprite.getWidth() / 2) - (effectSprite.getWidth() / 2);
-                                    int effectY = (int)entity.getY() + (baseSprite.getHeight() / 2) - (effectSprite.getHeight() / 2);
-                                    effectSprite.draw(g, effectX, effectY);
-                                }
-                                int maxHP = entity.getMaxHP();
-                                int currentHP = entity.getCurrentHP();
-
-                                if (maxHP > 0) {
-                                    int bossBarWidth = 100; // 체력바 너비
-                                    int bossBarHeight = 10; // 체력바 높이
-
-                                    // ★★★ 여기가 핵심! 보스 머리 위로 위치를 옮긴다 ★★★
-                                    // X 좌표: 보스 중앙에 맞춰 정렬
-                                    int barX = (int)entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
-                                    // Y 좌표: 보스 머리 위 15픽셀 지점
-                                    int barY = (int)entity.getY() - 15;
-
-                                    // 배경 (빨간색)
-                                    g.setColor(Color.RED);
-                                    g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
-
-                                    // 현재 체력 (녹색)
-                                    double bossHealthPercent = (double)currentHP / maxHP;
-                                    g.setColor(Color.GREEN);
-                                    g.fillRect(barX, barY, (int)(bossBarWidth * bossHealthPercent), bossBarHeight);
-
-                                    // 테두리
-                                    g.setColor(Color.WHITE);
-                                    g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
-                                }
-                                spriteToDraw = null;
-                                break;
-
-                            case LASER:
-                                spriteToDraw = this.bossLaserSprite;
-                                break;
-                        }
-                        if (spriteToDraw != null){
-                            spriteToDraw.draw(g, (int)entity.getX(), (int)entity.getY());
-                        }
-                    }
-                }
-                g.setColor(Color.WHITE);
-                g.setFont(new Font("Serif", Font.BOLD, 20));
-                if (currentGameState != null){
-                g.drawString("Score: " + currentGameState.getCurrentScore(), 650, 580);}
-                for (int i = 0; i < MAX_LIVES; i++) {
-                    Sprite heart = (i < currentGameState.getRemainingLives()) ? redHeartSprite : greyHeartSprite;
-                    heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
-                }
-                if (currentGameState.getRemainingLives() <= 0){
-                    isGameLoopRunning =  false;
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(container, "GAME OVER");
-                        mainMenu();
-                    });
-                    return;
-                }
-            }
+            renderGame(g);
 
             g.dispose();
+
             strategy.show();
 
-            try {
-                long sleepTime = targetMsPerFrame - (System.currentTimeMillis() - now);
-                if (sleepTime > 0){
-                    Thread.sleep(sleepTime);
-                    last = now;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (checkGameOver()) {
+                isGameLoopRunning = false;
+                showGameOverScreen();
+                return;
+            }
+
+            limitFrameRate(now, targetMsPerFrame);
+        }
+    }
+
+    private void handleInput(){
+        if (leftPressed){
+            sendToServer(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
+        }
+        if (rightPressed){
+            sendToServer(new PlayerInput(PlayerInput.Action.MOVE_RIGHT));
+        }
+        if (firePressed){
+            sendToServer(new PlayerInput(PlayerInput.Action.FIRE));
+        }
+        if (!leftPressed && !rightPressed){
+            sendToServer(new PlayerInput(PlayerInput.Action.STOP));
+        }
+    }
+
+    private void renderGame(Graphics2D g){
+        g.setColor(Color.black);
+        g.fillRect(0, 0, 800, 600); // 배경 색
+        gameBackground.draw(g,0,0);
+
+        if (currentGameState == null){
+            drawWaitingScreen(g);
+        } else{
+            drawGameState(g);
+        }
+    }
+
+    private void drawWaitingScreen(Graphics2D g) {
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Serif", Font.BOLD, 30));
+        String waitMsg = "Waiting for another player...";
+        int strWidth = g.getFontMetrics().stringWidth(waitMsg);
+        g.drawString(waitMsg, (800 - strWidth) / 2, 300);
+    }
+
+    private void drawGameState(Graphics2D g) {
+        drawEntities(g);
+        drawHud(g);
+    }
+
+    private void drawEntities(Graphics2D g) {
+        TreeMap<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
+        if (entitiesToDraw == null) {
+            return;
+        }
+
+        for (ServerGame.Entity entity : entitiesToDraw.values()) {
+            drawEntity(g, entity);
+        }
+    }
+
+    private void drawHud(Graphics2D g) {
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Serif", Font.BOLD, 20));
+        if (currentGameState != null) {
+            g.drawString("Score: " + currentGameState.getCurrentScore(), 650, 580);
+            for (int i = 0; i < MAX_LIVES; i++) {
+                Sprite heart = (i < currentGameState.getRemainingLives()) ? redHeartSprite : greyHeartSprite;
+                heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
             }
         }
     }
 
-    /**
-     * A class to handle keyboard input from the user. The class
-     * handles both dynamic input during game play, i.e. left/right
-     * and shoot, and more static type input (i.e. press any key to
-     * continue)
-     * <p>
-     * This has been implemented as an inner class more through
-     * habbit then anything else. Its perfectly normal to implement
-     * this as seperate class if slight less convienient.
-     *
-     * @author Kevin Glass
-     */
+    private void drawEntity(Graphics2D g, ServerGame.Entity entity) {
+        Sprite spriteToDraw = null;
+
+        switch (entity.getType()) {
+            case PLAYER:
+                ServerPlayerShipEntity ship = (ServerPlayerShipEntity) entity;
+                spriteToDraw = shipSprite[ship.getUpgradeCount()];
+                break;
+            case ALIEN:
+                drawAlien(g, entity);
+                spriteToDraw = null;
+                break;
+            case REFLECT_ALIEN:
+                spriteToDraw = this.reflectAlienSprite;
+                break;
+            case SHOT:
+                ServerShotEntity shot = (ServerShotEntity) entity;
+                spriteToDraw = shotSprite[shot.getUpgradeLevel()];
+                break;
+            case ITEM:
+                spriteToDraw = this.itemSprite;
+                break;
+            case ALIEN_SHOT:
+                spriteToDraw = this.alienShotSprite;
+                break;
+            case METEOR:
+                int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
+                spriteToDraw = this.meteorFrames[frameNumber];
+                break;
+            case BOSS:
+                drawBoss(g, entity);
+                spriteToDraw = null;
+                break;
+            case LASER:
+                spriteToDraw = this.bossLaserSprite;
+                break;
+                default:
+                    break;
+        }
+
+        if (spriteToDraw != null) {
+            spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
+        }
+    }
+
+    private void drawAlien(Graphics2D g, ServerGame.Entity entity) {
+        int frame = ((ServerAlienEntity) entity).getFrameNumber();
+        Sprite spriteToDraw = this.alienFrames[frame];
+        spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
+
+        int barWidth = 40;
+        int barHeight = 3;
+        int barx = (int) entity.getX();
+        int bary = (int) entity.getY() + (int) entity.getHeight() + 2;
+
+        int alienMaxHp = entity.getMaxHP();
+        int alienCurrentHp = entity.getCurrentHP();
+        double healthPercent = (double) alienCurrentHp / alienMaxHp;
+
+        g.setColor(Color.red);
+        g.fillRect(barx, bary, barWidth, barHeight);
+
+        g.setColor(Color.green);
+        g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
+    }
+
+    private void drawBoss(Graphics2D g, ServerGame.Entity entity) {
+        int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
+        Sprite baseSprite = this.bossSprite;
+        Sprite effectSprite = (bossFrame == 1) ? this.bossChargingSprite : null;
+
+        if (baseSprite != null) {
+            baseSprite.draw(g, (int) entity.getX(), (int) entity.getY());
+            if (effectSprite != null) {
+                int effectX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (effectSprite.getWidth() / 2);
+                int effectY = (int) entity.getY() + (baseSprite.getHeight() / 2) - (effectSprite.getHeight() / 2);
+                effectSprite.draw(g, effectX, effectY);
+            }
+        }
+        int maxHP = entity.getMaxHP();
+        int currentHP = entity.getCurrentHP();
+
+        if (maxHP > 0) {
+            int bossBarWidth = 100;
+            int bossBarHeight = 10;
+            int barX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
+            int barY = (int) entity.getY() - 15;
+
+            g.setColor(Color.RED);
+            g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
+            double bossHealthPercent = (double) currentHP / maxHP;
+            g.setColor(Color.GREEN);
+            g.fillRect(barX, barY, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
+            g.setColor(Color.WHITE);
+            g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
+        }
+    }
+
+
+    private boolean checkGameOver() {
+        return (currentGameState != null && currentGameState.getRemainingLives() <= 0);
+    }
+
+    private void showGameOverScreen() {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(container, "GAME OVER");
+            mainMenu();
+        });
+    }
+
+    private void limitFrameRate(long now, int targetMsPerFrame) {
+        try {
+            long sleepTime = targetMsPerFrame - (System.currentTimeMillis() - now);
+            if (sleepTime > 0) {
+                Thread.sleep(sleepTime);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+        /**
+         * A class to handle keyboard input from the user. The class
+         * handles both dynamic input during game play, i.e. left/right
+         * and shoot, and more static type input (i.e. press any key to
+         * continue)
+         * <p>
+         * This has been implemented as an inner class more through
+         * habbit then anything else. Its perfectly normal to implement
+         * this as seperate class if slight less convienient.
+         *
+         * @author Kevin Glass
+         */
     private class KeyInputHandler extends KeyAdapter {
+        @Override
         public void keyPressed(KeyEvent e) {
 
             switch (e.getKeyCode()) {
@@ -368,6 +417,8 @@ public class Game extends Canvas {
                 case KeyEvent.VK_SPACE:
                     firePressed = true;
                     break;
+                default:
+                    break;
             }
         }
         /**
@@ -375,6 +426,7 @@ public class Game extends Canvas {
          *
          * @param e The details of the key that was released
          */
+        @Override
         public void keyReleased(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_LEFT) {
                 leftPressed = false;
