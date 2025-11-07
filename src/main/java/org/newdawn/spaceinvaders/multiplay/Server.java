@@ -91,7 +91,9 @@ public class Server implements Runnable{
                 int ns = (int)(remain % 1_000_000L);
                 try {
                     Thread.sleep(ms, ns);
-                } catch (InterruptedException e){}
+                } catch (InterruptedException e){
+                    logger.log(Level.INFO, "스레드 중단(interrupt) 신호를 받아 종료합니다.");
+                }
             }
 
             if (!isRunning) {
@@ -179,7 +181,7 @@ public class Server implements Runnable{
 
     // server to one client
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         int port = DEFAULT_PORT_NUMBER;
         int players = 2;
