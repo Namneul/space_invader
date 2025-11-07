@@ -52,29 +52,32 @@ public class Server implements Runnable{
 
     private void startAcceptClientsLoop() {
         logger.log(Level.INFO, "Accepting Clients. Max players: {0}", maxPlayers);
-        while (true) {
+        while (isRunning) {
             try {
-                final Socket socket = serverSocket.accept();
-
-                if (!isRunning) {
-                    socket.close(); // 방금 연결된 소켓은 닫아줌
-                    break;
-                }
-
-                logger.info("A new client has connected. Players: "+(clientHandlers.size()+1));
-                final boolean isSinglePlayer = (maxPlayers == 1);
-                final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, -1, loginHost, isSinglePlayer);
-                clientHandlers.add(clientHandler);
-                new Thread(clientHandler).start();
+                handleNewClientConnection();
             } catch (final IOException e) {
-                if (!isRunning) {
-                    logger.info("서버 종료 신호 감지. 클라이언트 수락 루프를 종료.");
-                    break; // 루프 탈출
+                if (isRunning) {
+                    logger.log(Level.WARNING, "클라이언트 소켓 수락 중 오류 발생", e);
                 } else {
-                    e.printStackTrace();
+                    logger.info("서버 소켓 닫힘 (종료 신호). 클라이언트 수락 루프를 종료합니다.");
                 }
             }
         }
+    }
+
+    private void handleNewClientConnection() throws IOException {
+        final Socket socket = serverSocket.accept();
+
+        if (!isRunning) {
+            socket.close();
+            return;
+        }
+
+        logger.log(Level.INFO, "A new client has connected. Players: {0}", (clientHandlers.size() + 1));
+        final boolean isSinglePlayer = (maxPlayers == 1);
+        final ClientHandler clientHandler = new ClientHandler(this, serverGame, socket, -1, loginHost, isSinglePlayer);
+        clientHandlers.add(clientHandler);
+        new Thread(clientHandler).start();
     }
 
     private void startGameloop() {
