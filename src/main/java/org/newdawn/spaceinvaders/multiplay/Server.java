@@ -106,42 +106,41 @@ public class Server implements Runnable{
 
     private void sendUpdatesToAll() {
 
-
         if (serverGame.isBossClear()) {
             for (final ClientHandler clientHandler : clientHandlers) {
                 // "VICTORY" 글자를 보낸다.
                 clientHandler.sendUpdate("VICTORY");
             }
-        }{
-            TreeMap<Integer, ServerGame.Entity> originEntities = serverGame.getEntities();
-            TreeMap<Integer, ServerGame.Entity> entitiesCopy;
+        }
+        TreeMap<Integer, ServerGame.Entity> originEntities = serverGame.getEntities();
+        TreeMap<Integer, ServerGame.Entity> entitiesCopy;
 
-            synchronized (originEntities) {
-                entitiesCopy = new TreeMap<>(originEntities);
-            }
-            for (final ClientHandler clientHandler : clientHandlers) {
-                int lives = 3;
-                int score = 0;
+        synchronized (originEntities) {
+            entitiesCopy = new TreeMap<>(originEntities);
+        }
+        for (final ClientHandler clientHandler : clientHandlers) {
+            int lives = 3;
+            int score = 0;
 
-                Integer pid = clientHandler.getPlayershipId();
-                if (pid != null && pid >= 0) {
-                    PlayerData pd = playerDataMap.get(pid);
-                    if (pd != null) {
-                        lives = pd.getLives();
-                        score = pd.getScore();
-                    }
-                }
-                GameState currentState = new GameState(entitiesCopy, score, lives, GameState.GameStatus.PLAYING);
-                try {
-                    clientHandler.sendUpdate(currentState);
-                } catch (RuntimeException e) {
-                    toRemove.add(clientHandler);
+            Integer pid = clientHandler.getPlayershipId();
+            if (pid != null && pid >= 0) {
+                PlayerData pd = playerDataMap.get(pid);
+                if (pd != null) {
+                    lives = pd.getLives();
+                    score = pd.getScore();
                 }
             }
-            for (ClientHandler ch : toRemove) {
-                onClientDisconnected(ch);
+            GameState currentState = new GameState(entitiesCopy, score, lives, GameState.GameStatus.PLAYING);
+            try {
+                clientHandler.sendUpdate(currentState);
+            } catch (RuntimeException e) {
+                toRemove.add(clientHandler);
             }
         }
+        for (ClientHandler ch : toRemove) {
+            onClientDisconnected(ch);
+        }
+
     }
 
 
