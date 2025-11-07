@@ -16,8 +16,8 @@ import java.util.logging.Logger;
 public class Server implements Runnable{
 
     Logger logger = Logger.getLogger(getClass().getName());
-    public final static int TICKS_PER_SECOND = 120;
-    public final static int DEFAULT_PORT_NUMBER = 12345;
+    public static final int TICKS_PER_SECOND = 120;
+    public static final int DEFAULT_PORT_NUMBER = 12345;
 
 
     private ServerSocket serverSocket;
