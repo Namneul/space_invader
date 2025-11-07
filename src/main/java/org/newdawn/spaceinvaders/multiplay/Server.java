@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -39,7 +40,7 @@ public class Server implements Runnable{
         this.maxPlayers = maxPlayers;
         try {
             this.serverSocket = new ServerSocket(port);
-            logger.info("Server started on port: "+port+" for "+maxPlayers);
+            logger.log(Level.INFO,"Server started on port: {0} for {1}", new Object[]{ port, maxPlayers });
         } catch (final IOException e) {
             e.printStackTrace();
             System.exit(1);
@@ -53,7 +54,7 @@ public class Server implements Runnable{
     }
 
     private void startAcceptClientsLoop() {
-        logger.info("Accepting Clients. Max players: "+maxPlayers);
+        logger.log(Level.INFO, "Accepting Clients. Max players: {0}", maxPlayers);
         while (true) {
             try {
                 final Socket socket = serverSocket.accept();
@@ -159,9 +160,7 @@ public class Server implements Runnable{
             return; // 이미 참가 처리된 클라이언트면 무시
         }
 
-        // ▼▼▼ 로그 추가 ▼▼▼
-        logger.info("[서버 로그] onPlayerJoined 호출됨. 현재 참가자: " + joined.size() + " / " + maxPlayers);
-
+        logger.log(Level.INFO, "[서버 로그] onPlayerJoined 호출됨. 현재 참가자: {0} / {1}", new Object[]{ joined.size(), maxPlayers });
         if (joined.size() >= maxPlayers) {
             logger.info("[서버 로그] 참가자 수 충족! 게임 루프를 시작합니다."); // ▼▼▼ 로그 추가 ▼▼▼
             gameStarted = true;
