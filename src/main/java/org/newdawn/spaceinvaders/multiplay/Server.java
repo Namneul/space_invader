@@ -1,9 +1,6 @@
 package org.newdawn.spaceinvaders.multiplay;
 
 
-import org.newdawn.spaceinvaders.multiplay.stage.Stage;
-import org.newdawn.spaceinvaders.multiplay.stage.Stage1;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
