@@ -12,9 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+
 
 public class Server implements Runnable{
 
+    Logger logger = Logger.getLogger(getClass().getName());
     public final static int TICKS_PER_SECOND = 120;
     public final static int DEFAULT_PORT_NUMBER = 12345;
 
@@ -36,7 +39,7 @@ public class Server implements Runnable{
         this.maxPlayers = maxPlayers;
         try {
             this.serverSocket = new ServerSocket(port);
-            System.out.println("Server started on port: "+port+" for "+maxPlayers);
+            logger.info("Server started on port: "+port+" for "+maxPlayers);
         } catch (final IOException e) {
             e.printStackTrace();
             System.exit(1);
@@ -50,7 +53,7 @@ public class Server implements Runnable{
     }
 
     private void startAcceptClientsLoop() {
-        System.out.println("Accepting Clients. Max plaers: "+maxPlayers);
+        logger.info("Accepting Clients. Max players: "+maxPlayers);
         while (true) {
             try {
                 final Socket socket = serverSocket.accept();
@@ -60,14 +63,14 @@ public class Server implements Runnable{
                     break;
                 }
 
-                System.out.println("A new client has connected. Players: "+(clientHandlers.size()+1));
+                logger.info("A new client has connected. Players: "+(clientHandlers.size()+1));
                 final boolean isSinglePlayer = (maxPlayers == 1);
                 final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, -1, loginHost, isSinglePlayer);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
             } catch (final IOException e) {
                 if (!isRunning) {
-                    System.out.println("서버 종료 신호 감지. 클라이언트 수락 루프를 종료.");
+                    logger.info("서버 종료 신호 감지. 클라이언트 수락 루프를 종료.");
                     break; // 루프 탈출
                 } else {
                     e.printStackTrace();
@@ -77,7 +80,7 @@ public class Server implements Runnable{
     }
 
     private void startGameloop() {
-        System.out.println("[서버 로그] startGameloop 스레드 시작됨.");
+        logger.info("[서버 로그] startGameloop 스레드 시작됨.");
         final long nanosPerTick =  1_000_000_000L / TICKS_PER_SECOND;
         long last = System.nanoTime();
 
@@ -148,31 +151,31 @@ public class Server implements Runnable{
 
     public synchronized void onPlayerJoined(ClientHandler ch) {
         if (gameStarted) {
-            System.out.println("[서버 로그] 게임이 이미 시작되어 플레이어가 참가할 수 없습니다.");
+            logger.info("[서버 로그] 게임이 이미 시작되어 플레이어가 참가할 수 없습니다.");
             return;
         }
         if (!joined.add(ch)) {
-            System.out.println("[서버 로그] 이미 참가 처리된 클라이언트입니다.");
+            logger.info("[서버 로그] 이미 참가 처리된 클라이언트입니다.");
             return; // 이미 참가 처리된 클라이언트면 무시
         }
 
         // ▼▼▼ 로그 추가 ▼▼▼
-        System.out.println("[서버 로그] onPlayerJoined 호출됨. 현재 참가자: " + joined.size() + " / " + maxPlayers);
+        logger.info("[서버 로그] onPlayerJoined 호출됨. 현재 참가자: " + joined.size() + " / " + maxPlayers);
 
         if (joined.size() >= maxPlayers) {
-            System.out.println("[서버 로그] 참가자 수 충족! 게임 루프를 시작합니다."); // ▼▼▼ 로그 추가 ▼▼▼
+            logger.info("[서버 로그] 참가자 수 충족! 게임 루프를 시작합니다."); // ▼▼▼ 로그 추가 ▼▼▼
             gameStarted = true;
             serverGame.initializeFirstStage();
             new Thread(this::startGameloop).start();
         } else {
-            System.out.println("[서버 로그] 아직 참가자를 더 기다립니다."); // ▼▼▼ 로그 추가 ▼▼▼
+            logger.info("[서버 로그] 아직 참가자를 더 기다립니다."); // ▼▼▼ 로그 추가 ▼▼▼
         }
     }
 
     public synchronized void onClientDisconnected(ClientHandler ch) {
         clientHandlers.remove(ch);   // 접속 목록에서 제거
         joined.remove(ch);           // 참가 집합에서도 제거
-        System.out.println("Client removed. Now: " + clientHandlers.size());
+        logger.info("Client removed. Now: " + clientHandlers.size());
     }
 
     public Map<Integer, PlayerData> getPlayerDataMap(){ return playerDataMap; }
