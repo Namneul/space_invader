@@ -93,6 +93,7 @@ public class Server implements Runnable{
                     Thread.sleep(ms, ns);
                 } catch (InterruptedException e){
                     logger.log(Level.INFO, "스레드 중단(interrupt) 신호를 받아 종료합니다.");
+                    Thread.currentThread().interrupt();
                 }
             }
 
