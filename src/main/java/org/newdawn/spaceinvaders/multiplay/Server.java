@@ -163,10 +163,6 @@ public class Server implements Runnable{
 
     public Login getLoginHost(){ return loginHost; }
 
-    public void setStatus(){
-
-    }
-
     // server to one client
 
     public static void main(String[] args) throws IOException {
