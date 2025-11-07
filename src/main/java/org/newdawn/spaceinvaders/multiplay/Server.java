@@ -42,7 +42,7 @@ public class Server implements Runnable{
             e.printStackTrace();
             System.exit(1);
         }
-        clientHandlers = new ArrayList<ClientHandler>();
+        clientHandlers = new ArrayList<>();
     }
 
     @Override
