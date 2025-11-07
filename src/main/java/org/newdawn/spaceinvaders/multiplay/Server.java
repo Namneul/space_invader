@@ -20,6 +20,7 @@ public class Server implements Runnable{
 
 
     private ServerSocket serverSocket;
+    private volatile boolean isRunning = true;
     private final ServerGame serverGame;
     private final ArrayList<ClientHandler> clientHandlers;
     protected Map<Integer, PlayerData> playerDataMap = new ConcurrentHashMap<>();
@@ -53,13 +54,24 @@ public class Server implements Runnable{
         while (true) {
             try {
                 final Socket socket = serverSocket.accept();
+
+                if (!isRunning) {
+                    socket.close(); // 방금 연결된 소켓은 닫아줌
+                    break;
+                }
+
                 System.out.println("A new client has connected. Players: "+(clientHandlers.size()+1));
                 final boolean isSinglePlayer = (maxPlayers == 1);
                 final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, -1, loginHost, isSinglePlayer);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
             } catch (final IOException e) {
-                e.printStackTrace();
+                if (!isRunning) {
+                    System.out.println("서버 종료 신호 감지. 클라이언트 수락 루프를 종료.");
+                    break; // 루프 탈출
+                } else {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -69,7 +81,7 @@ public class Server implements Runnable{
         final long nanosPerTick =  1_000_000_000L / TICKS_PER_SECOND;
         long last = System.nanoTime();
 
-        while (true) {
+        while (isRunning) {
             long next = last + nanosPerTick;
             long now = System.nanoTime();
             long remain = next - now;
@@ -79,6 +91,10 @@ public class Server implements Runnable{
                 try {
                     Thread.sleep(ms, ns);
                 } catch (InterruptedException e){}
+            }
+
+            if (!isRunning) {
+                break;
             }
 
             serverGame.tick();
