@@ -793,7 +793,7 @@ public class Game extends Canvas {
         });
     }
 
-    private final Object connLock = new Object();
+    private transient Object connLock = new Object();
 
     private void disconnectIfConnected() {
         synchronized (connLock) {
