@@ -844,10 +844,10 @@ public class Game extends Canvas {
         new Thread(() -> {
             try {
                 Object response = sendRequestWithTempConnection(host, port, request);
-                if (response instanceof LoginResponse) {
-                    handleLoginResponse((LoginResponse) response);
-                } else if (response instanceof SignUpResponse) {
-                    handleSignupResponse((SignUpResponse) response);
+                if (response instanceof LoginResponse loginResponse) {
+                    handleLoginResponse(loginResponse);
+                } else if (response instanceof SignUpResponse signUpResponse) {
+                    handleSignupResponse(signUpResponse);
                 }
             } catch (IOException | ClassNotFoundException ex) {
                 SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "서버 통신 오류: " + ex.getMessage()));
@@ -866,9 +866,6 @@ public class Game extends Canvas {
     public ObjectOutputStream getOutputStream(){
         return outputStream;
     }
-    public ObjectInputStream getInputStream(){
-        return inputStream;
-    }
 
 
     /**
@@ -878,7 +875,7 @@ public class Game extends Canvas {
      *
      * @param argv The arguments that are passed into our game
      */
-    public static void main(String argv[]) {
+    public static void main(String[] argv) {
         Game game = new Game();
 
         SwingUtilities.invokeLater(game::mainMenu);
