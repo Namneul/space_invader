@@ -55,7 +55,7 @@ public class Server implements Runnable{
                 final Socket socket = serverSocket.accept();
                 System.out.println("A new client has connected. Players: "+(clientHandlers.size()+1));
                 final boolean isSinglePlayer = (maxPlayers == 1);
-                final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, -1, loginHost, isSinglePlayer);
+                final ClientHandler clientHandler = new ClientHandler(this, serverGame,socket, -1, loginHost);
                 clientHandlers.add(clientHandler);
                 new Thread(clientHandler).start();
             } catch (final IOException e) {
