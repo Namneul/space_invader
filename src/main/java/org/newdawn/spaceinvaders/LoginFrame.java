@@ -111,9 +111,9 @@ public class LoginFrame {
         frame.pack();
         frame.setVisible(true);
         authLogin();
-        signupButton.addActionListener(e->{
-            signUp();
-        });
+        signupButton.addActionListener(e->
+            signUp()
+        );
 
     }
     public void signUp(){
@@ -197,20 +197,19 @@ public class LoginFrame {
         frame.revalidate();
         frame.repaint();
 
-        signUpBtn.addActionListener(e->{
-
-            game.performLoginOrSignUp(new SignUpRequest(username.getText(), password.getText()));
-        });
-        backBtn.addActionListener(e->{
-            frame.setContentPane(this.signinPanel);
-        });
+        signUpBtn.addActionListener(e->
+            game.performLoginOrSignUp(new SignUpRequest(username.getText(), password.getText()))
+        );
+        backBtn.addActionListener(e->
+            frame.setContentPane(this.signinPanel)
+        );
     }
 
     public void authLogin(){
-        loginButton.addActionListener(e -> {
+        loginButton.addActionListener(e ->
 
-            game.performLoginOrSignUp(new LoginRequest(userId.getText(), new String(password.getPassword())));
-        });
+            game.performLoginOrSignUp(new LoginRequest(userId.getText(), new String(password.getPassword())))
+        );
     }
 }
 
