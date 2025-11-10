@@ -14,11 +14,11 @@ import java.awt.Font;
 
 public class LoginFrame {
     JFrame frame;
-    private JPanel signinPanel=null, signupPanel=null ;
     User user;
     private final Game game;
     private static final Font INPUT_FONT = new Font("SansSerif", Font.BOLD, 15);
-
+    JPanel signinPanel = new JPanel();
+    JPanel signupPanel = new JPanel();
     private Sprite loginBackground;
     JButton loginButton;
     JButton signupButton;
