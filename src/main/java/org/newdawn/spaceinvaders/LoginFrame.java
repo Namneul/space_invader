@@ -151,7 +151,24 @@ public class LoginFrame {
                 SUbtn.setIcon(signUpIcon);
             }
         });
+        JButton backBtn = new JButton(backIcon);
+        backBtn.setBounds(300,444,200,50);
+        backBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        backBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        backBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        backBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                backBtn.setIcon(backIcon_hover);
+            }
 
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                backBtn.setIcon(backIcon);
+            }
+        });
 
         JTextField username = new JTextField(10);
         username.setBounds(300,222,200,50);
@@ -172,6 +189,7 @@ public class LoginFrame {
 
 
         signupPanel.add(SUbtn);
+        signupPanel.add(backBtn);
         signupPanel.add(username);
         signupPanel.add(password);
 
