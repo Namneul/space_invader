@@ -7,37 +7,25 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.logging.*;
 
 public class ServerGame {
 
     private volatile boolean isGameLoopRunning = false;
-
     private int alienCount;
-
     private int currentStageIndex;  // 현재 스테이지 인덱스
-
     private Stage currentStage;
-
-
     public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
-
     private boolean logicUpdateRequested = false;
-
     private boolean bossLogicUpdateRequested = false;
-
     private ArrayList<Integer> removeList = new ArrayList<>();
-
     private Server server;
-
     private int smallestAvailableId = 0;
-
     private TreeMap<Integer, Entity> entities;
-
     private ArrayList<Stage> stages;
-
     private final Random random = new Random();
-
     private boolean bossClear = false;
+    Logger logger = Logger.getLogger(getClass().getName());
 
 
     public enum EntityType{
@@ -256,7 +244,7 @@ public class ServerGame {
                 }
             }
             if (!bossExists) {
-                System.out.println("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
+                logger.info("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
                 ServerBossEntity boss = new ServerBossEntity(this, 350, 50);
                 entities.put(boss.getId(), boss);
                 return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
@@ -267,7 +255,7 @@ public class ServerGame {
 
         // 만약 마지막 스테이지까지 모두 클리어했다면
         if (currentStageIndex >= stages.size()) {
-            System.out.println("[서버 로그] 모든 스테이지 클리어! 게임에서 승리했습니다.");
+            logger.info("[서버 로그] 모든 스테이지 클리어! 게임에서 승리했습니다.");
             // 점수 저장 로직
             for (PlayerData data : server.getPlayerDataMap().values()) {
                 server.getLoginHost().insertScore(data.getId(), data.getScore());
@@ -276,7 +264,7 @@ public class ServerGame {
         }
         // 다음 스테이지가 남아있다면
         else {
-            System.out.println("[서버 로그] 다음 스테이지(" + (currentStageIndex + 1) + ")를 시작합니다.");
+           logger.log(Level.INFO,"[서버 로그] 다음 스테이지({0})를 시작합니다.", (currentStageIndex + 1));
             currentStage = stages.get(currentStageIndex);
             currentStage.initialize(this, entities); // 다음 스테이지의 적들을 생성합니다.
         }
@@ -305,7 +293,7 @@ public class ServerGame {
         entities.put(playerShip.getId(), playerShip);
 
         server.getPlayerDataMap().computeIfAbsent(playerShip.getId(), id -> new PlayerData("Gues- "+id));
-        System.out.println("Server: 플레이어 생성 완료. 총 엔티티 수: " + entities.size());
+        logger.log(Level.INFO,"Server: 플레이어 생성 완료. 총 엔티티 수: {0}",entities.size());
         return playerShip.getId();
     }
 
@@ -366,7 +354,7 @@ public class ServerGame {
         currentStageIndex = 0;
         currentStage = stages.get(currentStageIndex);
         currentStage.initialize(this, entities);
-        System.out.println("ServerGame: "+currentStage.getStageName()+" initialized.");
+        logger.info("ServerGame: "+currentStage.getStageName()+" initialized.");
     }
 
     public void spawnMeteor(){
@@ -387,7 +375,7 @@ public class ServerGame {
             killerData.increaseBossKilledScore();
         }
         server.getLoginHost().insertScore(killerData.getId(), killerData.getScore());
-        System.out.println("보스 처치! 최종 승리!");
+        logger.info("보스 처치! 최종 승리!");
 
 
 
@@ -395,7 +383,7 @@ public class ServerGame {
     }
 
     public void bossSummonsMinions(int bossX, int bossY) {
-        System.out.println("보스 패턴: 하수인 소환!");
+        logger.info("보스 패턴: 하수인 소환!");
         alienCount++;
         for (int i = 0; i < 5; i++) {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
@@ -407,7 +395,7 @@ public class ServerGame {
     }
 
     public void bossFiresShotgun(int bossX, int bossY) {
-        System.out.println("보스 패턴: 샷건 발사!");
+        logger.info("보스 패턴: 샷건 발사!");
         for (int i = -2; i <= 2; i++) {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
             ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45, bossY + 100);
