@@ -179,26 +179,26 @@ public class LoginFrame {
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
-        JTextField password = new JTextField(10);
-        password.setBounds(300,302,200,50);
-        password.setOpaque(false); // 1. 배경을 투명하게 설정
-        password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
-        password.setForeground(Color.BLACK); // 3. 글자 색 변경
-        password.setFont(INPUT_FONT); // 4. 폰트 설정
+        JTextField myPassword = new JTextField(10);
+        myPassword.setBounds(300,302,200,50);
+        myPassword.setOpaque(false); // 1. 배경을 투명하게 설정
+        myPassword.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
+        myPassword.setForeground(Color.BLACK); // 3. 글자 색 변경
+        myPassword.setFont(INPUT_FONT); // 4. 폰트 설정
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
         signupPanel.add(signUpBtn);
         signupPanel.add(backBtn);
         signupPanel.add(username);
-        signupPanel.add(password);
+        signupPanel.add(myPassword);
 
         frame.setContentPane(signupPanel);
         frame.revalidate();
         frame.repaint();
 
         signUpBtn.addActionListener(e->
-            game.performLoginOrSignUp(new SignUpRequest(username.getText(), password.getText()))
+            game.performLoginOrSignUp(new SignUpRequest(username.getText(), myPassword.getText()))
         );
         backBtn.addActionListener(e->
             frame.setContentPane(this.signinPanel)
