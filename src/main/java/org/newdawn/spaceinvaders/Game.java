@@ -742,12 +742,11 @@ public class Game extends Canvas {
                         }
                     } else if (msg instanceof GameState) {
                         currentGameState = (GameState) msg;
-                    } else if (msg instanceof LoginResponse) {
-                        handleLoginResponse((LoginResponse) msg);
-                    } else if (msg instanceof SignUpResponse) {
-                        handleSignupResponse((SignUpResponse) msg);
-                    } else if (msg instanceof RankResponse) {
-                        RankResponse res = (RankResponse) msg;
+                    } else if (msg instanceof LoginResponse loginResponseMsg) {
+                        handleLoginResponse(loginResponseMsg);
+                    } else if (msg instanceof SignUpResponse signUpResponseMsg) {
+                        handleSignupResponse(signUpResponseMsg);
+                    } else if (msg instanceof RankResponse res ) {
                         SwingUtilities.invokeLater(() -> {
                             try { new RankBoard(res.getRanking()); }
                             catch (Exception e) { JOptionPane.showMessageDialog(container, "can't show RankBoard"); }
@@ -755,7 +754,7 @@ public class Game extends Canvas {
                     }
                 }
             } catch (Exception ex) {
-
+                ex.printStackTrace();
             } finally {
                 disconnectIfConnected();
                 isGameLoopRunning = false;
@@ -796,20 +795,14 @@ public class Game extends Canvas {
         });
     }
 
-    private final Object connLock = new Object();
+    private transient Object connLock = new Object();
 
     private void disconnectIfConnected() {
         synchronized (connLock) {
-            try { if (inputStream != null)  inputStream.close(); } catch (IOException ignored) {}
-            try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) {}
-            try { if (socket != null)       socket.close(); }      catch (IOException ignored) {}
+            try { if (inputStream != null)  inputStream.close(); } catch (IOException ignored) {ignored.printStackTrace(); }
+            try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) {ignored.printStackTrace(); }
+            try { if (socket != null)       socket.close(); }      catch (IOException ignored) {ignored.printStackTrace(); }
             inputStream = null; outputStream = null; socket = null;
-        }
-    }
-
-    private boolean isConnected() {
-        synchronized (connLock) {
-            return socket != null && socket.isConnected() && !socket.isClosed();
         }
     }
 
