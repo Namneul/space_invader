@@ -10,12 +10,14 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.SwingConstants;
+import java.awt.Font;
 
 public class LoginFrame {
     JFrame frame;
     private JPanel signinPanel=null, signupPanel=null ;
     User user;
     private final Game game;
+    private static final Font INPUT_FONT = new Font("SansSerif", Font.BOLD, 15);
 
     private Sprite loginBackground;
     JButton loginButton;
@@ -89,7 +91,7 @@ public class LoginFrame {
         userId.setOpaque(false); // 1. 배경을 투명하게 설정
         userId.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
         userId.setForeground(Color.BLACK); // 3. 글자 색 변경
-        userId.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        userId.setFont(INPUT_FONT); // 4. 폰트 설정
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
         password = new JPasswordField(10);
@@ -97,7 +99,7 @@ public class LoginFrame {
         password.setOpaque(false); // 1. 배경을 투명하게 설정
         password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
         password.setForeground(Color.BLACK); // 3. 글자 색 변경
-        password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        password.setFont(INPUT_FONT); // 4. 폰트 설정
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
         signinPanel.add(signupButton);
@@ -156,7 +158,7 @@ public class LoginFrame {
         username.setOpaque(false); // 1. 배경을 투명하게 설정
         username.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
         username.setForeground(Color.BLACK); // 3. 글자 색 변경
-        username.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        username.setFont(INPUT_FONT); // 4. 폰트 설정
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
@@ -165,7 +167,7 @@ public class LoginFrame {
         password.setOpaque(false); // 1. 배경을 투명하게 설정
         password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
         password.setForeground(Color.BLACK); // 3. 글자 색 변경
-        password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
+        password.setFont(INPUT_FONT); // 4. 폰트 설정
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
