@@ -28,8 +28,11 @@ public class LoginFrame {
     public LoginFrame(Game game){
         this.game = game;
     }
-    public Login login = new Login();
+    private Login login = new Login();
 
+    public Login getLogin() {
+        return this.login;
+    }
     public void startlogin() {
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
         ImageIcon signInIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signInBtn.png"));
