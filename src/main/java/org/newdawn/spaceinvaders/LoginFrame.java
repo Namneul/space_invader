@@ -34,8 +34,8 @@ public class LoginFrame {
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
         ImageIcon signInIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signInBtn.png"));
         ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
-        ImageIcon signInIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signInBtn_hover.png"));
-        ImageIcon signUpIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+        ImageIcon signInIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signInBtn_hover.png"));
+        ImageIcon signUpIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
 
         frame = new JFrame("로그인");
         this.signinPanel = new JPanel(){
@@ -57,7 +57,7 @@ public class LoginFrame {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                signupButton.setIcon(signUpIcon_hover);
+                signupButton.setIcon(signUpIconHover);
             }
 
             @Override
@@ -76,7 +76,7 @@ public class LoginFrame {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                loginButton.setIcon(signInIcon_hover);
+                loginButton.setIcon(signInIconHover);
             }
 
             @Override
@@ -110,7 +110,7 @@ public class LoginFrame {
         frame.add(signinPanel);
         frame.pack();
         frame.setVisible(true);
-        AuthLogin();
+        authLogin();
         signupButton.addActionListener(e->{
             signUp();
         });
@@ -119,8 +119,8 @@ public class LoginFrame {
     public void signUp(){
         ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
         ImageIcon backIcon = new ImageIcon(getClass().getClassLoader().getResource("button/backBtn.png"));
-        ImageIcon signUpIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
-        ImageIcon backIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/backBtn_hover.png"));
+        ImageIcon signUpIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+        ImageIcon backIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/backBtn_hover.png"));
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
 
         signupPanel = new JPanel(){
@@ -133,22 +133,22 @@ public class LoginFrame {
         signupPanel.setPreferredSize(new Dimension(800,600));
         signupPanel.setLayout(null);
 
-        JButton SUbtn = new JButton(signUpIcon);
-        SUbtn.setBounds(300,377,200,50);
-        SUbtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
-        SUbtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
-        SUbtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
-        SUbtn.addMouseListener(new MouseAdapter() {
+        JButton signUpBtn = new JButton(signUpIcon);
+        signUpBtn.setBounds(300,377,200,50);
+        signUpBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        signUpBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        signUpBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        signUpBtn.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                SUbtn.setIcon(signUpIcon_hover);
+                signUpBtn.setIcon(signUpIconHover);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
                 // 아이콘을 기본 이미지로 복원
-                SUbtn.setIcon(signUpIcon);
+                signUpBtn.setIcon(signUpIcon);
             }
         });
         JButton backBtn = new JButton(backIcon);
@@ -160,7 +160,7 @@ public class LoginFrame {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                backBtn.setIcon(backIcon_hover);
+                backBtn.setIcon(backIconHover);
             }
 
             @Override
@@ -188,7 +188,7 @@ public class LoginFrame {
         userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
-        signupPanel.add(SUbtn);
+        signupPanel.add(signUpBtn);
         signupPanel.add(backBtn);
         signupPanel.add(username);
         signupPanel.add(password);
@@ -197,13 +197,16 @@ public class LoginFrame {
         frame.revalidate();
         frame.repaint();
 
-        SUbtn.addActionListener(e->{
+        signUpBtn.addActionListener(e->{
 
             game.performLoginOrSignUp(new SignUpRequest(username.getText(), password.getText()));
         });
+        backBtn.addActionListener(e->{
+            frame.setContentPane(this.signinPanel);
+        });
     }
 
-    public void AuthLogin(){
+    public void authLogin(){
         loginButton.addActionListener(e -> {
 
             game.performLoginOrSignUp(new LoginRequest(userId.getText(), new String(password.getPassword())));
