@@ -9,7 +9,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
+import javax.swing.SwingConstants;
 
 public class LoginFrame {
     JFrame frame;
@@ -90,7 +90,7 @@ public class LoginFrame {
         userId.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
         userId.setForeground(Color.BLACK); // 3. 글자 색 변경
         userId.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
-        userId.setHorizontalAlignment(JTextField.LEFT); // 5. 텍스트 가운데 정렬
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
         password = new JPasswordField(10);
         password.setBounds(300,302,200,50);
@@ -98,7 +98,7 @@ public class LoginFrame {
         password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
         password.setForeground(Color.BLACK); // 3. 글자 색 변경
         password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
-        password.setHorizontalAlignment(JPasswordField.LEFT); // 5. 텍스트 가운데 정렬
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
         signinPanel.add(signupButton);
         signinPanel.add(loginButton);
@@ -157,7 +157,7 @@ public class LoginFrame {
         username.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
         username.setForeground(Color.BLACK); // 3. 글자 색 변경
         username.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
-        username.setHorizontalAlignment(JTextField.LEFT); // 5. 텍스트 가운데 정렬
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
         JTextField password = new JTextField(10);
@@ -166,7 +166,7 @@ public class LoginFrame {
         password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
         password.setForeground(Color.BLACK); // 3. 글자 색 변경
         password.setFont(new Font("SansSerif", Font.BOLD, 15)); // 4. 폰트 설정
-        password.setHorizontalAlignment(JPasswordField.LEFT); // 5. 텍스트 가운데 정렬
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
 
 
         signupPanel.add(SUbtn);
