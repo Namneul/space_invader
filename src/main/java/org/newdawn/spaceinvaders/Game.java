@@ -17,6 +17,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The main hook of our game. This class with both act as a manager
@@ -74,7 +76,7 @@ public class Game extends Canvas {
 
     private transient LoginFrame loginFrame;
     private transient Process singlePlayServerProcess;
-
+    Logger logger = Logger.getLogger(getClass().getName());
 
     public Game() {
         // create a frame to contain our game
@@ -443,7 +445,7 @@ public class Game extends Canvas {
 
     public void mainMenu() {
 
-        System.out.println("[게임 로그] 메인 메뉴로 복귀. 게임 상태 초기화");
+        logger.info("[게임 로그] 메인 메뉴로 복귀. 게임 상태 초기화");
         isGameLoopRunning = false;
         isConnecting = false;
         currentGameState = null;
@@ -470,10 +472,10 @@ public class Game extends Canvas {
         ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("button/loginBtn.png"));
         ImageIcon rankIcon = new ImageIcon(getClass().getClassLoader().getResource("button/rankBtn.png"));
         ImageIcon onlineIcon = new ImageIcon(getClass().getClassLoader().getResource("button/onlineBtn.png"));
-        ImageIcon startIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/startBtn_hover.png"));
-        ImageIcon loginIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/loginBtn_hover.png"));
-        ImageIcon rankIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/rankBtn_hover.png"));
-        ImageIcon onlineIcon_hover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/onlineBtn_hover.png"));
+        ImageIcon startIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/startBtn_hover.png"));
+        ImageIcon loginIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/loginBtn_hover.png"));
+        ImageIcon rankIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/rankBtn_hover.png"));
+        ImageIcon onlineIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/onlineBtn_hover.png"));
 
         //버튼 생성
         JButton[] menuButtons = {
@@ -520,15 +522,15 @@ public class Game extends Canvas {
                     pb.redirectErrorStream(true); // 에러 출력을 표준 출력으로 합쳐서 보기 편하게 함
                     pb.directory(new File("."));
                     this.singlePlayServerProcess = pb.start();
-                    System.out.println("--- 로컬 서버 프로세스 시작됨 ---");
+                    logger.info("--- 로컬 서버 프로세스 시작됨 ---");
 
                     try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(singlePlayServerProcess.getInputStream()))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
-                            System.out.println("[Local Server]: " + line);
+                            logger.log(Level.INFO,"[Local Server]: {0}",line);
                         }
                     }
-                    System.out.println("--- 로컬 서버 프로세스 종료됨 ---");
+                    logger.info("--- 로컬 서버 프로세스 종료됨 ---");
 
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> {
@@ -571,7 +573,7 @@ public class Game extends Canvas {
                     ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
                     pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
                     serverProcess = pb.start();
-                    System.out.println("임시 랭킹 서버를 시작합니다 (포트: " + tempPort + ")");
+                    logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
 
                     // 서버 프로세스가 출력하는 로그를 실시간으로 보여주는 코드 (디버깅용)
                     Process finalServerProcess = serverProcess;
@@ -579,7 +581,7 @@ public class Game extends Canvas {
                         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                System.out.println("[Rank Server]: " + line);
+                                logger.log(Level.INFO,"[Rank Server]: {0}",line);
                             }
                         } catch (IOException ioException) {}
                     }).start();
@@ -609,7 +611,7 @@ public class Game extends Canvas {
                 } finally {
                     // 모든 작업이 끝나면 (성공하든 실패하든) 임시 서버 프로세스를 강제 종료
                     if (serverProcess != null && serverProcess.isAlive()) {
-                        System.out.println("임시 랭킹 서버를 종료합니다.");
+                        logger.info("임시 랭킹 서버를 종료합니다.");
                         serverProcess.destroyForcibly();
                     }
                 }
@@ -651,7 +653,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[0].setIcon(startIcon_hover);
+                menuButtons[0].setIcon(startIconHover);
             }
 
             @Override
@@ -665,7 +667,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[1].setIcon(loginIcon_hover);
+                menuButtons[1].setIcon(loginIconHover);
             }
 
             @Override
@@ -679,7 +681,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[2].setIcon(rankIcon_hover);
+                menuButtons[2].setIcon(rankIconHover);
             }
 
             @Override
@@ -693,7 +695,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[3].setIcon(onlineIcon_hover);
+                menuButtons[3].setIcon(onlineIconHover);
             }
 
             @Override
@@ -719,11 +721,11 @@ public class Game extends Canvas {
             final Socket s = socket;
             final ObjectInputStream in = inputStream;
             try {
-                System.out.println("[클라이언트 로그] 서버로부터 메시지 수신 대기 시작.");
+                logger.info("[클라이언트 로그] 서버로부터 메시지 수신 대기 시작.");
                 while (!Thread.currentThread().isInterrupted()
                         && s != null && !s.isClosed()) {
                     Object msg = in.readObject();
-                    System.out.println("[클라이언트 로그] 서버로부터 메시지 수신: " + msg.getClass().getSimpleName());
+                    logger.log(Level.INFO,"[클라이언트 로그] 서버로부터 메시지 수신: {0}", msg.getClass().getSimpleName());
 
                     if (msg instanceof String) {
                         String signal = (String) msg;

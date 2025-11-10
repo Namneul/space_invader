@@ -2,21 +2,23 @@ package org.newdawn.spaceinvaders.multiplay;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.logging.*;
 
 public class Login {
     private final String dbUrl = "jdbc:mysql://34.47.73.59:3306/spaceinvader";
     private final String dbUser = "remoteuser";
     private final String dbPass = "sshs8458";
     private Connection con = null;
+    Logger logger = Logger.getLogger(getClass().getName());
     // private PreparedStatement psmt = null; // ★★★ 공유해서 쓰던 이 변수를 삭제!
 
     public Login() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             con = DriverManager.getConnection(dbUrl, dbUser, dbPass);
-            System.out.println("successfully connected to the database");
+            logger.info("successfully connected to the database");
         } catch (ClassNotFoundException | SQLException e) {
-            System.err.println("Database connection failed: " + e.getMessage());
+            logger.info("Database connection failed: " + e.getMessage());
             // 여기서 연결 실패 시 con이 null이 될 수 있으므로, 각 메소드에서 null 체크를 하는 것이 좋습니다.
         }
     }
@@ -30,7 +32,7 @@ public class Login {
             ps.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.out.println("Failed to insert user: " + e.getMessage());
+            logger.info("Failed to insert user: " + e.getMessage());
             return false;
         }
     }
@@ -44,7 +46,7 @@ public class Login {
                 return rs.next(); // 결과가 있으면 true, 없으면 false
             }
         } catch (SQLException e) {
-            System.out.println("Fail to login: " + e.getMessage());
+            logger.info("Fail to login: " + e.getMessage());
             return false;
         }
     }
@@ -58,10 +60,10 @@ public class Login {
                 ps.setString(1, username);
                 ps.setInt(2, score);
                 ps.executeUpdate();
-                System.out.println("Successfully inserted score for " + username);
+                logger.log(Level.INFO, "Successfully inserted score for {0}", username);
             }
         } catch (SQLException e) {
-            System.out.println("Failed to insert score: " + e.getMessage());
+            logger.info("Failed to insert score: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -87,7 +89,7 @@ public class Login {
                 ranking.add(new RankData(username, score));
             }
         } catch (SQLException e) {
-            System.out.println("Failed to get all scores: " + e.getMessage());
+            logger.info("Failed to get all scores: " + e.getMessage());
             // 랭킹 조회 실패 시 비어있는 리스트를 반환하는 것이 더 안전합니다.
         }
         return ranking;

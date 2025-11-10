@@ -8,8 +8,8 @@ public class User {
         Score++;
     }
     public void compareScore(LoginFrame lf) {
-        if(lf.login.getScore(Id)<Score) {
-            lf.login.insertScore(Id, Score);
+        if(lf.getLogin().getScore(Id)<Score) {
+            lf.getLogin().insertScore(Id, Score);
         }
     }
 
