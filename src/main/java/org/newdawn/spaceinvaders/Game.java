@@ -653,7 +653,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[0].setIcon(startIcon_hover);
+                menuButtons[0].setIcon(startIconHover);
             }
 
             @Override
@@ -667,7 +667,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[1].setIcon(loginIcon_hover);
+                menuButtons[1].setIcon(loginIconHover);
             }
 
             @Override
@@ -681,7 +681,7 @@ public class Game extends Canvas {
             @Override
             public void mouseEntered(MouseEvent e) {
                 // 아이콘을 hover 이미지로 변경
-                menuButtons[2].setIcon(rankIcon_hover);
+                menuButtons[2].setIcon(rankIconHover);
             }
 
             @Override
