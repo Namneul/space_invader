@@ -20,44 +20,15 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * The main hook of our game. This class with both act as a manager
- * for the display and central mediator for the game logic.
- * <p>
- * Display management will consist of a loop that cycles round all
- * entities in the game asking them to move and then drawing them
- * in the appropriate place. With the help of an inner class it
- * will also allow the player to control the main ship.
- * <p>
- * As a mediator it will be informed when entities within our game
- * detect events (e.g. alient killed, played died) and will take
- * appropriate game actions.
- *
- * @author Kevin Glass
- */
 public class Game extends Canvas {
 
     //그리기 변수
     private JFrame container;
     private JPanel gamePanel;
+    private GameRenderer gameRenderer;
     private transient BufferStrategy strategy;
     private static final String windowTitle = "Space Invaders";
 
-    // sprite 변수
-    private transient Sprite[] shipSprite = new Sprite[4];
-    private transient Sprite[] shotSprite = new Sprite[4];
-    private transient Sprite[] alienFrames = new Sprite[4];
-    private transient Sprite[] meteorFrames = new Sprite[16];
-    private transient Sprite redHeartSprite;
-    private transient Sprite greyHeartSprite;
-    private transient Sprite mainBackground;
-    private transient Sprite gameBackground;
-    private transient Sprite itemSprite;
-    private transient Sprite alienShotSprite;
-    private transient Sprite reflectAlienSprite;
-    private transient Sprite bossSprite;
-    private transient Sprite bossLaserSprite;
-    private transient Sprite bossChargingSprite;
 
     // 서버 변수
     private transient Socket socket;
@@ -85,6 +56,8 @@ public class Game extends Canvas {
         gamePanel.setPreferredSize(new Dimension(800, 600));
         gamePanel.setLayout(null);
 
+        this.gameRenderer = new GameRenderer();
+
         this.setBounds(0, 0, 800, 600);
         gamePanel.add(this);
 
@@ -104,44 +77,9 @@ public class Game extends Canvas {
         addKeyListener(new KeyInputHandler());
         requestFocus();
 
-        loadSprites();
     }
 
-    private void loadSprites(){
-        SpriteStore store = SpriteStore.get();
-        shipSprite[0] = store.getSprite("sprites/ship/ship.gif");
-        shipSprite[1] = store.getSprite("sprites/ship/shiptype1.png");
-        shipSprite[2] = store.getSprite("sprites/ship/shiptype2.png");
-        shipSprite[3] = store.getSprite("sprites/ship/shiptype3.png");
 
-        shotSprite[0] = store.getSprite("sprites/shots/shot0.png");
-        shotSprite[1] = store.getSprite("sprites/shots/shot1.png");
-        shotSprite[2] = store.getSprite("sprites/shots/shot2.png");
-        shotSprite[3] = store.getSprite("sprites/shots/shot3.png");
-
-        alienFrames[0] = store.getSprite("sprites/alien.gif");
-        alienFrames[1] = store.getSprite("sprites/alien2.gif");
-        alienFrames[2] = alienFrames[0];
-        alienFrames[3] = store.getSprite("sprites/alien3.gif");
-        redHeartSprite = store.getSprite("sprites/heart_red.png");
-        greyHeartSprite = store.getSprite("sprites/heart_grey.png");
-        mainBackground = store.getSprite("mainBackground.png");
-        itemSprite = store.getSprite("sprites/gems_db16.png");
-        alienShotSprite = store.getSprite("sprites/alienshot.png");
-        reflectAlienSprite = store.getSprite("sprites/ReflectAlien.png");
-        gameBackground = store.getSprite("gameBackground.png");
-        for (int i = 0; i < 16; i++) {
-            meteorFrames[i] = store.getSprite("sprites/meteor/b1000"+i+".png");
-        }
-        bossSprite = store.getSprite("sprites/boss.png");
-        bossChargingSprite = store.getSprite("sprites/boss_charging.png");
-        bossLaserSprite = store.getSprite("sprites/boss_laser.png");
-    }
-
-    /**
-     * Start a fresh game, this should clear out any old data and
-     * create a new set.
-     */
     private void startGame(String serverAdress, int port) {
 
         if (isGameLoopRunning){
@@ -190,13 +128,7 @@ public class Game extends Canvas {
 
             handleInput();
 
-            Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-
-            renderGame(g);
-
-            g.dispose();
-
-            strategy.show();
+            gameRenderer.render(currentGameState);
 
             if (checkGameOver()) {
                 isGameLoopRunning = false;
@@ -220,152 +152,6 @@ public class Game extends Canvas {
         }
         if (!leftPressed && !rightPressed){
             sendToServer(new PlayerInput(PlayerInput.Action.STOP));
-        }
-    }
-
-    private void renderGame(Graphics2D g){
-        g.setColor(Color.black);
-        g.fillRect(0, 0, 800, 600); // 배경 색
-        gameBackground.draw(g,0,0);
-
-        if (currentGameState == null){
-            drawWaitingScreen(g);
-        } else{
-            drawGameState(g);
-        }
-    }
-
-    private void drawWaitingScreen(Graphics2D g) {
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Serif", Font.BOLD, 30));
-        String waitMsg = "Waiting for another player...";
-        int strWidth = g.getFontMetrics().stringWidth(waitMsg);
-        g.drawString(waitMsg, (800 - strWidth) / 2, 300);
-    }
-
-    private void drawGameState(Graphics2D g) {
-        drawEntities(g);
-        drawHud(g);
-    }
-
-    private void drawEntities(Graphics2D g) {
-        TreeMap<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
-        if (entitiesToDraw == null) {
-            return;
-        }
-
-        for (ServerGame.Entity entity : entitiesToDraw.values()) {
-            drawEntity(g, entity);
-        }
-    }
-
-    private void drawHud(Graphics2D g) {
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Serif", Font.BOLD, 20));
-        if (currentGameState != null) {
-            g.drawString("Score: " + currentGameState.getCurrentScore(), 650, 580);
-            for (int i = 0; i < MAX_LIVES; i++) {
-                Sprite heart = (i < currentGameState.getRemainingLives()) ? redHeartSprite : greyHeartSprite;
-                heart.draw(g, 10 + (i * (redHeartSprite.getWidth() + 5)), 10);
-            }
-        }
-    }
-
-    private void drawEntity(Graphics2D g, ServerGame.Entity entity) {
-        Sprite spriteToDraw = null;
-
-        switch (entity.getType()) {
-            case PLAYER:
-                ServerPlayerShipEntity ship = (ServerPlayerShipEntity) entity;
-                spriteToDraw = shipSprite[ship.getUpgradeCount()];
-                break;
-            case ALIEN:
-                drawAlien(g, entity);
-                spriteToDraw = null;
-                break;
-            case REFLECT_ALIEN:
-                spriteToDraw = this.reflectAlienSprite;
-                break;
-            case SHOT:
-                ServerShotEntity shot = (ServerShotEntity) entity;
-                spriteToDraw = shotSprite[shot.getUpgradeLevel()];
-                break;
-            case ITEM:
-                spriteToDraw = this.itemSprite;
-                break;
-            case ALIEN_SHOT:
-                spriteToDraw = this.alienShotSprite;
-                break;
-            case METEOR:
-                int frameNumber = ((ServerMeteoriteEntity) entity).getFrameNumber();
-                spriteToDraw = this.meteorFrames[frameNumber];
-                break;
-            case BOSS:
-                drawBoss(g, entity);
-                spriteToDraw = null;
-                break;
-            case LASER:
-                spriteToDraw = this.bossLaserSprite;
-                break;
-                default:
-                    break;
-        }
-
-        if (spriteToDraw != null) {
-            spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
-        }
-    }
-
-    private void drawAlien(Graphics2D g, ServerGame.Entity entity) {
-        int frame = ((ServerAlienEntity) entity).getFrameNumber();
-        Sprite spriteToDraw = this.alienFrames[frame];
-        spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
-
-        int barWidth = 40;
-        int barHeight = 3;
-        int barx = (int) entity.getX();
-        int bary = (int) entity.getY() + (int) entity.getHeight() + 2;
-
-        int alienMaxHp = entity.getMaxHP();
-        int alienCurrentHp = entity.getCurrentHP();
-        double healthPercent = (double) alienCurrentHp / alienMaxHp;
-
-        g.setColor(Color.red);
-        g.fillRect(barx, bary, barWidth, barHeight);
-
-        g.setColor(Color.green);
-        g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
-    }
-
-    private void drawBoss(Graphics2D g, ServerGame.Entity entity) {
-        int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
-        Sprite baseSprite = this.bossSprite;
-        Sprite effectSprite = (bossFrame == 1) ? this.bossChargingSprite : null;
-
-        if (baseSprite != null) {
-            baseSprite.draw(g, (int) entity.getX(), (int) entity.getY());
-            if (effectSprite != null) {
-                int effectX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (effectSprite.getWidth() / 2);
-                int effectY = (int) entity.getY() + (baseSprite.getHeight() / 2) - (effectSprite.getHeight() / 2);
-                effectSprite.draw(g, effectX, effectY);
-            }
-        }
-        int maxHP = entity.getMaxHP();
-        int currentHP = entity.getCurrentHP();
-
-        if (maxHP > 0) {
-            int bossBarWidth = 100;
-            int bossBarHeight = 10;
-            int barX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
-            int barY = (int) entity.getY() - 15;
-
-            g.setColor(Color.RED);
-            g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
-            double bossHealthPercent = (double) currentHP / maxHP;
-            g.setColor(Color.GREEN);
-            g.fillRect(barX, barY, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
-            g.setColor(Color.WHITE);
-            g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
         }
     }
 
@@ -393,18 +179,6 @@ public class Game extends Canvas {
     }
 
 
-        /**
-         * A class to handle keyboard input from the user. The class
-         * handles both dynamic input during game play, i.e. left/right
-         * and shoot, and more static type input (i.e. press any key to
-         * continue)
-         * <p>
-         * This has been implemented as an inner class more through
-         * habbit then anything else. Its perfectly normal to implement
-         * this as seperate class if slight less convienient.
-         *
-         * @author Kevin Glass
-         */
     private class KeyInputHandler extends KeyAdapter {
         @Override
         public void keyPressed(KeyEvent e) {
@@ -423,11 +197,6 @@ public class Game extends Canvas {
                     break;
             }
         }
-        /**
-         * Notification from AWT that a key has been released.
-         *
-         * @param e The details of the key that was released
-         */
         @Override
         public void keyReleased(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_LEFT) {
@@ -460,8 +229,8 @@ public class Game extends Canvas {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                if (mainBackground != null){
-                mainBackground.draw(g, 0, 0);
+                if (gameRenderer != null && gameRenderer.getMainBackground() != null){
+                gameRenderer.getMainBackground().draw(g, 0, 0);
                 }
             }
         };
@@ -561,21 +330,17 @@ public class Game extends Canvas {
         });
 
         menuButtons[2].addActionListener(e -> {
-            // UI가 멈추지 않도록 모든 작업을 새 스레드에서 실행
             new Thread(() -> {
                 Process serverProcess = null;
-                // 랭킹 확인만을 위한 임시 포트를 사용 (기존 서버와 충돌 방지)
                 String tempPort = "12346";
 
                 try {
-                    // 랭킹 확인 전용 임시 서버를 백그라운드에서 실행
                     String classpath = System.getProperty("java.class.path");
                     ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
                     pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
                     serverProcess = pb.start();
                     logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
 
-                    // 서버 프로세스가 출력하는 로그를 실시간으로 보여주는 코드 (디버깅용)
                     Process finalServerProcess = serverProcess;
                     new Thread(() -> {
                         try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
@@ -587,10 +352,8 @@ public class Game extends Canvas {
                     }).start();
 
 
-                    // 서버가 완전히 켜질 때까지 잠시 대기
                     Thread.sleep(1000); // 0.5초
 
-                    // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
                     Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());
 
                     if (response instanceof RankResponse) {
@@ -856,6 +619,7 @@ public class Game extends Canvas {
 
         createBufferStrategy(2);
         strategy = getBufferStrategy();
+        gameRenderer.setStrategy(strategy);
     }
 
     public ObjectOutputStream getOutputStream(){
@@ -863,20 +627,9 @@ public class Game extends Canvas {
     }
 
 
-    /**
-     * The entry point into the game. We'll simply create an
-     * instance of class which will start the display and game
-     * loop.
-     *
-     * @param argv The arguments that are passed into our game
-     */
     public static void main(String[] argv) {
         Game game = new Game();
 
         SwingUtilities.invokeLater(game::mainMenu);
-        // Start the main game loop, note: this method will not
-        // return until the game has finished running. Hence we are
-        // using the actual main thread to run the game.
-
     }
 }
