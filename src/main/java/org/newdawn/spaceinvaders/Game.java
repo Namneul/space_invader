@@ -646,7 +646,8 @@ public class Game extends Canvas {
                 }, "join-signal").start();
 
             } catch (NumberFormatException ex) {
-                throw new RuntimeException(ex);
+                JOptionPane.showMessageDialog(container, "유효한 숫자로 포트 번호를 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
+                isConnecting = false;
             }
         });
         menuButtons[0].addMouseListener(new MouseAdapter() {
