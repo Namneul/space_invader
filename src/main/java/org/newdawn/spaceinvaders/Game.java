@@ -36,6 +36,11 @@ import java.util.logging.Logger;
  * @author Kevin Glass
  */
 public class Game extends Canvas {
+    //서버 호스트 포트 상수
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int SINGLE_PLAYER_PORT = 1234;
+    private static final int MULTIPLAYER_DEFAULT_PORT = 12345;
+    private static final int RANK_SERVER_PORT = 12346;
 
     //그리기 변수
     private JFrame container;
@@ -548,7 +553,7 @@ public class Game extends Canvas {
                 } catch (InterruptedException ex) {
                     return;
                 }
-                startGame("localhost", 1234);
+                startGame(DEFAULT_HOST, SINGLE_PLAYER_PORT);
             }, "client-connect-starter").start();
 
         });
@@ -563,7 +568,7 @@ public class Game extends Canvas {
             new Thread(() -> {
                 Process serverProcess = null;
                 // 랭킹 확인만을 위한 임시 포트를 사용 (기존 서버와 충돌 방지)
-                String tempPort = "12346";
+                String tempPort = String.valueOf(RANK_SERVER_PORT);
 
                 try {
                     // 랭킹 확인 전용 임시 서버를 백그라운드에서 실행
@@ -606,10 +611,13 @@ public class Game extends Canvas {
                         });
                     }
 
-                } catch (IOException | InterruptedException | ClassNotFoundException ex) {
+                } catch (IOException | ClassNotFoundException ex) {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
                     ex.printStackTrace();
 
+                } catch (InterruptedException ex){
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
+                    Thread.currentThread().interrupt();
                 } finally {
                     // 모든 작업이 끝나면 (성공하든 실패하든) 임시 서버 프로세스를 강제 종료
                     if (serverProcess != null && serverProcess.isAlive()) {
@@ -624,13 +632,13 @@ public class Game extends Canvas {
             if (isConnecting || isGameLoopRunning) return;
             isConnecting = true;
 
-            String ip = JOptionPane.showInputDialog("Enter Server Ip: ", "localhost");
+            String ip = JOptionPane.showInputDialog("Enter Server Ip: ", DEFAULT_HOST);
             if (ip == null || ip.trim().isEmpty()){
                 isConnecting = false;
                 return;
             }
 
-            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number","12345");
+            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number",String.valueOf(MULTIPLAYER_DEFAULT_PORT));
             if (portStr == null || portStr.trim().isEmpty()){
                 isConnecting = false;
                 return;
@@ -857,8 +865,8 @@ public class Game extends Canvas {
     }
 
     public void performLoginOrSignUp(Object request) {
-        String host = "localhost";
-        int port = 12345;
+        String host = DEFAULT_HOST;
+        int port = MULTIPLAYER_DEFAULT_PORT;
         new Thread(() -> {
             try {
                 Object response = sendRequestWithTempConnection(host, port, request);
