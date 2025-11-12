@@ -3,6 +3,7 @@ package org.newdawn.spaceinvaders.multiplay;
 import org.newdawn.spaceinvaders.multiplay.communication.*;
 import java.io.*;
 import java.net.Socket;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClientHandler implements Runnable {
@@ -36,73 +37,94 @@ public class ClientHandler implements Runnable {
 
     public void run() {
         try {
-            if (!joined) {
-                logger.info("[핸들러 로그] 싱글플레이어 자동 참가 로직 실행.");
-                this.joined = true;
-                this.playershipId = serverGame.spawnPlayerEntity();
-                String name = "Player 1";
-                server.getPlayerDataMap().putIfAbsent(this.playershipId, new PlayerData(name));
-                logger.info("[핸들러 로그] 싱글플레이어 생성 완료.");
-                server.onPlayerJoined(this);
-            }
+           handleSinglePlayerAutoJoin();
             while (!socket.isClosed()) {
                 Object receivedInput = inputStream.readObject();
-
-                if (receivedInput instanceof LoginRequest req) {
-                    boolean ok = loginHost.login(req.getUsername(), req.getPassword());
-
-                    if (ok) {
-                        String newName = req.getUsername();
-
-                        server.getPlayerDataMap().computeIfPresent(this.playershipId, (id, playerData) -> {
-                            playerData.setName(newName); // PlayerData 객체의 이름을 변경
-                            return playerData; // 변경된 PlayerData 객체를 반환
-                        });
-                    }
-
-                    outputStream.writeObject(new LoginResponse(ok, req.getUsername()));
-                } else if (receivedInput instanceof SignUpRequest req) {
-                    boolean ok = loginHost.signUp(req.getUsername(), req.getPassword());
-                    if (ok) {
-                        this.pendingUsername = req.getUsername(); // 매핑은 로그인/조인 시!
-                    }
-                    outputStream.writeObject(new SignUpResponse(ok, ok ? "Sign up successful!" : "Username already exists"));
-                } else if (receivedInput instanceof RankRequest) {
-                    RankResponse response = new RankResponse(loginHost.getAllScore());
-                    outputStream.writeObject(response);
-                } else if (receivedInput instanceof PlayerInput playerInput) {
-                    if (!joined) {
-                        if (pendingUsername == null) {
-                            continue;
-                        }
-                        joined = true;
-                        if (this.playershipId < 0) {
-                            this.playershipId = serverGame.spawnPlayerEntity();
-                        }
-                        server.getPlayerDataMap().put(this.playershipId, new PlayerData(pendingUsername));
-                        server.onPlayerJoined(this);
-                    }
-
-                    serverGame.processPlayerInput(this.playershipId, playerInput);
-                }
+                processMessage(receivedInput);
 
             }
         } catch (IOException | ClassNotFoundException e) {
             // 클라이언트 연결이 끊기는 등 예외가 발생하면 루프가 종료되고 이 부분이 실행됩니다.
             serverGame.removeEntity(this.playershipId);
         } finally {
-            // 루프가 완전히 끝났을 때 (정상 종료 또는 예외 발생 시) 딱 한 번만 실행됩니다.
-            try { if (inputStream != null) inputStream.close(); } catch (IOException ignored) {
-                // intentionally ignored
-            }
-            try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) {
-                // intentionally ignored
-            }
-            try { if (socket != null) socket.close(); } catch (IOException ignored) {
-                // intentionally ignored
-            }
-            server.onClientDisconnected(this);
+            cleanupResources();
         }
+    }
+
+    private void handleSinglePlayerAutoJoin() {
+        if (!joined) {
+            logger.info("[핸들러 로그] 싱글플레이어 자동 참가 로직 실행.");
+            this.joined = true;
+            this.playershipId = serverGame.spawnPlayerEntity();
+            String name = "Player 1";
+            server.getPlayerDataMap().putIfAbsent(this.playershipId, new PlayerData(name));
+            logger.info("[핸들러 로그] 싱글플레이어 생성 완료.");
+            server.onPlayerJoined(this);
+        }
+    }
+
+    private void processMessage(Object receivedInput) throws IOException {
+        if (receivedInput instanceof LoginRequest req) {
+            handleLoginRequest(req);
+        } else if (receivedInput instanceof SignUpRequest req) {
+            handleSignUpRequest(req);
+        } else if (receivedInput instanceof RankRequest) {
+            handleRankRequest();
+        } else if (receivedInput instanceof PlayerInput playerInput) {
+            handlePlayerInput(playerInput);
+        } else {
+            logger.log(Level.WARNING, "알 수 없는 타입의 메시지 수신: {0}", receivedInput.getClass().getName());
+        }
+    }
+
+    private void handleLoginRequest(LoginRequest req) throws IOException {
+        boolean ok = loginHost.login(req.getUsername(), req.getPassword());
+        if (ok) {
+            String newName = req.getUsername();
+            server.getPlayerDataMap().computeIfPresent(this.playershipId, (id, playerData) -> {
+                playerData.setName(newName);
+                return playerData;
+            });
+        }
+        outputStream.writeObject(new LoginResponse(ok, req.getUsername()));
+    }
+
+    private void handleSignUpRequest(SignUpRequest req) throws IOException {
+        boolean ok = loginHost.signUp(req.getUsername(), req.getPassword());
+        if (ok) {
+            this.pendingUsername = req.getUsername();
+        }
+        outputStream.writeObject(new SignUpResponse(ok, ok ? "Sign up successful!" : "Username already exists"));
+    }
+
+    private void handleRankRequest() throws IOException {
+        RankResponse response = new RankResponse(loginHost.getAllScore());
+        outputStream.writeObject(response);
+    }
+
+    private void handlePlayerInput(PlayerInput playerInput) {
+        if (!joined) {
+            if (pendingUsername == null) {
+                return; // 아직 이름이 없으면 입력을 무시
+            }
+            joined = true;
+            if (this.playershipId < 0) {
+                this.playershipId = serverGame.spawnPlayerEntity();
+            }
+            server.getPlayerDataMap().put(this.playershipId, new PlayerData(pendingUsername));
+            server.onPlayerJoined(this);
+        }
+        serverGame.processPlayerInput(this.playershipId, playerInput);
+    }
+
+    private void cleanupResources() {
+        // finally 블록에 있던 복잡한 try-catch-ignored 로직
+        try { if (inputStream != null) inputStream.close(); } catch (IOException ignored) { /* ignored */ }
+        try { if (outputStream != null) outputStream.close(); } catch (IOException ignored) { /* ignored */ }
+        try { if (socket != null) socket.close(); } catch (IOException ignored) { /* ignored */ }
+
+        // 연결 종료 사실을 서버에 알리는 것도 여기서 처리
+        server.onClientDisconnected(this);
     }
 
     public int getPlayershipId(){ return playershipId; }
