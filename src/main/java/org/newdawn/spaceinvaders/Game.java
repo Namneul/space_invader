@@ -599,7 +599,7 @@ public class Game extends Canvas {
                     Thread.sleep(1000); // 0.5초
 
                     // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
-                    Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());
+                    Object response = sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
 
                     if (response instanceof RankResponse res) {
                         SwingUtilities.invokeLater(() -> {
