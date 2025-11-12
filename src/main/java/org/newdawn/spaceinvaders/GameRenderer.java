@@ -11,20 +11,20 @@ import java.util.TreeMap;
 
 public class GameRenderer {
 
-    private transient Sprite[] shipSprite = new Sprite[4];
-    private transient Sprite[] shotSprite = new Sprite[4];
-    private transient Sprite[] alienFrames = new Sprite[4];
-    private transient Sprite[] meteorFrames = new Sprite[16];
-    private transient Sprite redHeartSprite;
-    private transient Sprite greyHeartSprite;
-    private transient Sprite mainBackground;
-    private transient Sprite gameBackground;
-    private transient Sprite itemSprite;
-    private transient Sprite alienShotSprite;
-    private transient Sprite reflectAlienSprite;
-    private transient Sprite bossSprite;
-    private transient Sprite bossLaserSprite;
-    private transient Sprite bossChargingSprite;
+    private Sprite[] shipSprite = new Sprite[4];
+    private Sprite[] shotSprite = new Sprite[4];
+    private Sprite[] alienFrames = new Sprite[4];
+    private Sprite[] meteorFrames = new Sprite[16];
+    private Sprite redHeartSprite;
+    private Sprite greyHeartSprite;
+    private Sprite mainBackground;
+    private Sprite gameBackground;
+    private Sprite itemSprite;
+    private Sprite alienShotSprite;
+    private Sprite reflectAlienSprite;
+    private Sprite bossSprite;
+    private Sprite bossLaserSprite;
+    private Sprite bossChargingSprite;
 
     private BufferStrategy strategy;
     private GameState currentGameState;
@@ -136,7 +136,6 @@ public class GameRenderer {
                 break;
             case ALIEN:
                 drawAlien(g, entity);
-                spriteToDraw = null;
                 break;
             case REFLECT_ALIEN:
                 spriteToDraw = this.reflectAlienSprite;
@@ -157,7 +156,6 @@ public class GameRenderer {
                 break;
             case BOSS:
                 drawBoss(g, entity);
-                spriteToDraw = null;
                 break;
             case LASER:
                 spriteToDraw = this.bossLaserSprite;
