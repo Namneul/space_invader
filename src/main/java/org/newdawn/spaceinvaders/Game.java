@@ -717,58 +717,76 @@ public class Game extends Canvas {
         outputStream.flush();
         inputStream  = new ObjectInputStream(socket.getInputStream());
 
-        Thread listener = new Thread(() -> {
-            final Socket s = socket;
-            final ObjectInputStream in = inputStream;
-            try {
-                logger.info("[클라이언트 로그] 서버로부터 메시지 수신 대기 시작.");
-                while (!Thread.currentThread().isInterrupted()
-                        && s != null && !s.isClosed()) {
-                    Object msg = in.readObject();
-                    logger.log(Level.INFO,"[클라이언트 로그] 서버로부터 메시지 수신: {0}", msg.getClass().getSimpleName());
-
-                    if (msg instanceof String) {
-                        String signal = (String) msg;
-                        // "VICTORY" 신호인지 확인한다.
-                        if (signal.equals("VICTORY")) {
-                            isGameLoopRunning = false; // 게임 루프를 멈춘다.
-
-                            SwingUtilities.invokeLater(() -> {
-                                JOptionPane.showMessageDialog(container, "승리!", "게임 클리어", JOptionPane.INFORMATION_MESSAGE);
-                                mainMenu(); // 메인 메뉴로 돌아간다.
-                            });
-
-                            break; // 신호를 처리했으니 리스너 스레드는 종료.
-                        }
-                    } else if (msg instanceof GameState) {
-                        currentGameState = (GameState) msg;
-                    } else if (msg instanceof LoginResponse loginResponseMsg) {
-                        handleLoginResponse(loginResponseMsg);
-                    } else if (msg instanceof SignUpResponse signUpResponseMsg) {
-                        handleSignupResponse(signUpResponseMsg);
-                    } else if (msg instanceof RankResponse res ) {
-                        SwingUtilities.invokeLater(() -> {
-                            try { new RankBoard(res.getRanking()); }
-                            catch (Exception e) { JOptionPane.showMessageDialog(container, "can't show RankBoard"); }
-                        });
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            } finally {
-                disconnectIfConnected();
-                isGameLoopRunning = false;
-                isConnecting = false;
-
-                SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(container, "서버 끊김");
-                        isGameLoopRunning = false;
-                        mainMenu();
-                });
-            }
-        }, "server-listener");
+        Thread listener = new Thread(this::runServerListener, "server-listener");
         listener.setDaemon(true);
         listener.start();
+
+    }
+
+    private void runServerListener() {
+        final Socket s = socket;
+        final ObjectInputStream in = inputStream;
+        try {
+            logger.info("[클라이언트 로그] 서버로부터 메시지 수신 대기 시작.");
+
+            while (isServerConnectionActive(s)) {
+                Object msg = in.readObject();
+                logger.log(Level.INFO, "[클라이언트 로그] 서버로부터 메시지 수신: {0}", msg.getClass().getSimpleName());
+
+                boolean shouldContinue = handleReceivedMessage(msg);
+                if (!shouldContinue) {
+                    break;
+                }
+            }
+        }catch(Exception e){
+                if(isConnecting || isGameLoopRunning){
+                    e.printStackTrace();
+                }
+        }finally {
+            handleServerDisconnection();
+        }
+    }
+
+    private boolean isServerConnectionActive(Socket s) {
+        return !Thread.currentThread().isInterrupted()
+                && s != null && !s.isClosed() && s.isConnected();
+    }
+
+    private boolean handleReceivedMessage(Object msg) {
+        if (msg instanceof String signal) {
+            if (signal.equals("VICTORY")) {
+                isGameLoopRunning = false;
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(container, "승리!", "게임 클리어", JOptionPane.INFORMATION_MESSAGE);
+                    mainMenu();
+                });
+                return false;
+            }
+        } else if (msg instanceof GameState) {
+            currentGameState = (GameState) msg;
+        } else if (msg instanceof LoginResponse loginResponseMsg) {
+            handleLoginResponse(loginResponseMsg);
+        } else if (msg instanceof SignUpResponse signUpResponseMsg) {
+            handleSignupResponse(signUpResponseMsg);
+        } else if (msg instanceof RankResponse res ) {
+            SwingUtilities.invokeLater(() -> {
+                try { new RankBoard(res.getRanking()); }
+                catch (Exception e) { JOptionPane.showMessageDialog(container, "can't show RankBoard"); }
+            });
+        }
+        return true;
+    }
+
+    private void handleServerDisconnection() {
+        disconnectIfConnected();
+        isGameLoopRunning = false;
+        isConnecting = false;
+
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(container,"서버끊킴");
+            isGameLoopRunning = false;
+            mainMenu();
+        });
     }
 
 
