@@ -583,7 +583,12 @@ public class Game extends Canvas {
                             while ((line = reader.readLine()) != null) {
                                 logger.log(Level.INFO,"[Rank Server]: {0}",line);
                             }
-                        } catch (IOException ioException) {}
+                        } catch (IOException ioException) {
+                            // [수정] 랭킹 확인이 끝나고 메인 스레드가 서버 프로세스를
+                            // 강제 종료(destroyForcibly)할 때, 이 스트림이 닫히면서
+                            // "Stream closed" 등의 IOException이 발생하는 것은 정상입니다.
+                            // 따라서 이 예외는 의도적으로 무시합니다.
+                        }
                     }).start();
 
 
@@ -593,8 +598,7 @@ public class Game extends Canvas {
                     // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
                     Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());
 
-                    if (response instanceof RankResponse) {
-                        RankResponse res = (RankResponse) response;
+                    if (response instanceof RankResponse res) {
                         SwingUtilities.invokeLater(() -> {
                             try {
                                 new RankBoard(res.getRanking());
@@ -641,7 +645,9 @@ public class Game extends Canvas {
                 new Thread(() -> {
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException ex) {}
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
                     sendToServer(new PlayerInput(PlayerInput.Action.STOP));
                 }, "join-signal").start();
 
@@ -763,8 +769,8 @@ public class Game extends Canvas {
                 });
                 return false;
             }
-        } else if (msg instanceof GameState) {
-            currentGameState = (GameState) msg;
+        } else if (msg instanceof GameState gameStateMsg) {
+            currentGameState = gameStateMsg;
         } else if (msg instanceof LoginResponse loginResponseMsg) {
             handleLoginResponse(loginResponseMsg);
         } else if (msg instanceof SignUpResponse signUpResponseMsg) {
