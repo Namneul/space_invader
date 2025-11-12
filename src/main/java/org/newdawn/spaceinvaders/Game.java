@@ -36,6 +36,11 @@ import java.util.logging.Logger;
  * @author Kevin Glass
  */
 public class Game extends Canvas {
+    //서버 호스트 포트 상수
+    private static final String DEFAULT_HOST = "localhost";
+    private static final int SINGLE_PLAYER_PORT = 1234;
+    private static final int MULTIPLAYER_DEFAULT_PORT = 12345;
+    private static final int RANK_SERVER_PORT = 12346;
 
     //그리기 변수
     private JFrame container;
@@ -548,24 +553,22 @@ public class Game extends Canvas {
                 } catch (InterruptedException ex) {
                     return;
                 }
-                startGame("localhost", 1234);
+                startGame(DEFAULT_HOST, SINGLE_PLAYER_PORT);
             }, "client-connect-starter").start();
 
         });
 
         menuButtons[1].addActionListener(e -> {
-            String host = "localhost";
-            int port = 12345;
             loginFrame = new LoginFrame(this);
             loginFrame.startlogin();
         });
 
-        menuButtons[2].addActionListener(e -> {
+        menuButtons[2].addActionListener(e ->
             // UI가 멈추지 않도록 모든 작업을 새 스레드에서 실행
             new Thread(() -> {
                 Process serverProcess = null;
                 // 랭킹 확인만을 위한 임시 포트를 사용 (기존 서버와 충돌 방지)
-                String tempPort = "12346";
+                String tempPort = String.valueOf(RANK_SERVER_PORT);
 
                 try {
                     // 랭킹 확인 전용 임시 서버를 백그라운드에서 실행
@@ -583,7 +586,12 @@ public class Game extends Canvas {
                             while ((line = reader.readLine()) != null) {
                                 logger.log(Level.INFO,"[Rank Server]: {0}",line);
                             }
-                        } catch (IOException ioException) {}
+                        } catch (IOException ioException) {
+                            // [수정] 랭킹 확인이 끝나고 메인 스레드가 서버 프로세스를
+                            // 강제 종료(destroyForcibly)할 때, 이 스트림이 닫히면서
+                            // "Stream closed" 등의 IOException이 발생하는 것은 정상입니다.
+                            // 따라서 이 예외는 의도적으로 무시합니다.
+                        }
                     }).start();
 
 
@@ -593,8 +601,7 @@ public class Game extends Canvas {
                     // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
                     Object response = sendRequestWithTempConnection("localhost", Integer.parseInt(tempPort), new RankRequest());
 
-                    if (response instanceof RankResponse) {
-                        RankResponse res = (RankResponse) response;
+                    if (response instanceof RankResponse res) {
                         SwingUtilities.invokeLater(() -> {
                             try {
                                 new RankBoard(res.getRanking());
@@ -604,10 +611,13 @@ public class Game extends Canvas {
                         });
                     }
 
-                } catch (IOException | InterruptedException | ClassNotFoundException ex) {
+                } catch (IOException | ClassNotFoundException ex) {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
                     ex.printStackTrace();
 
+                } catch (InterruptedException ex){
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
+                    Thread.currentThread().interrupt();
                 } finally {
                     // 모든 작업이 끝나면 (성공하든 실패하든) 임시 서버 프로세스를 강제 종료
                     if (serverProcess != null && serverProcess.isAlive()) {
@@ -615,20 +625,20 @@ public class Game extends Canvas {
                         serverProcess.destroyForcibly();
                     }
                 }
-            }, "rank-requester-thread").start();
-        });
+            }, "rank-requester-thread").start()
+        );
 
         menuButtons[3].addActionListener(e -> {
             if (isConnecting || isGameLoopRunning) return;
             isConnecting = true;
 
-            String ip = JOptionPane.showInputDialog("Enter Server Ip: ", "localhost");
+            String ip = JOptionPane.showInputDialog("Enter Server Ip: ", DEFAULT_HOST);
             if (ip == null || ip.trim().isEmpty()){
                 isConnecting = false;
                 return;
             }
 
-            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number","12345");
+            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number",String.valueOf(MULTIPLAYER_DEFAULT_PORT));
             if (portStr == null || portStr.trim().isEmpty()){
                 isConnecting = false;
                 return;
@@ -641,12 +651,15 @@ public class Game extends Canvas {
                 new Thread(() -> {
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException ex) {}
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
                     sendToServer(new PlayerInput(PlayerInput.Action.STOP));
                 }, "join-signal").start();
 
             } catch (NumberFormatException ex) {
-                throw new RuntimeException(ex);
+                JOptionPane.showMessageDialog(container, "유효한 숫자로 포트 번호를 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
+                isConnecting = false;
             }
         });
         menuButtons[0].addMouseListener(new MouseAdapter() {
@@ -762,8 +775,8 @@ public class Game extends Canvas {
                 });
                 return false;
             }
-        } else if (msg instanceof GameState) {
-            currentGameState = (GameState) msg;
+        } else if (msg instanceof GameState gameStateMsg) {
+            currentGameState = gameStateMsg;
         } else if (msg instanceof LoginResponse loginResponseMsg) {
             handleLoginResponse(loginResponseMsg);
         } else if (msg instanceof SignUpResponse signUpResponseMsg) {
@@ -852,8 +865,8 @@ public class Game extends Canvas {
     }
 
     public void performLoginOrSignUp(Object request) {
-        String host = "localhost";
-        int port = 12345;
+        String host = DEFAULT_HOST;
+        int port = MULTIPLAYER_DEFAULT_PORT;
         new Thread(() -> {
             try {
                 Object response = sendRequestWithTempConnection(host, port, request);
