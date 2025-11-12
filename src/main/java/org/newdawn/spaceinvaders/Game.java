@@ -554,13 +554,11 @@ public class Game extends Canvas {
         });
 
         menuButtons[1].addActionListener(e -> {
-            String host = "localhost";
-            int port = 12345;
             loginFrame = new LoginFrame(this);
             loginFrame.startlogin();
         });
 
-        menuButtons[2].addActionListener(e -> {
+        menuButtons[2].addActionListener(e ->
             // UI가 멈추지 않도록 모든 작업을 새 스레드에서 실행
             new Thread(() -> {
                 Process serverProcess = null;
@@ -619,8 +617,8 @@ public class Game extends Canvas {
                         serverProcess.destroyForcibly();
                     }
                 }
-            }, "rank-requester-thread").start();
-        });
+            }, "rank-requester-thread").start()
+        );
 
         menuButtons[3].addActionListener(e -> {
             if (isConnecting || isGameLoopRunning) return;
