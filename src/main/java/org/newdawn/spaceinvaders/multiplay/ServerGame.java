@@ -11,7 +11,6 @@ import java.util.logging.*;
 
 public class ServerGame {
 
-    private volatile boolean isGameLoopRunning = false;
     private int alienCount;
     private int currentStageIndex;  // 현재 스테이지 인덱스
     private Stage currentStage;
@@ -41,11 +40,13 @@ public class ServerGame {
     }
 
 
-    public static abstract class Entity implements Serializable {
+    public abstract  static class Entity implements Serializable {
         protected transient ServerGame game;
         private int id;
-        protected double x, y;
-        private double width, height;
+        protected double x;
+        protected double y;
+        private double width;
+        private double height;
         protected double dx;
         protected double dy;
         protected EntityType type;
@@ -55,7 +56,7 @@ public class ServerGame {
 
 
 
-        public Entity(final ServerGame game,double width, double height, double x, double y) {
+        protected Entity(final ServerGame game,double width, double height, double x, double y) {
             this.game = game;
             this.id = this.game.getSmallestAvailableId();
             this.width = width;
@@ -104,7 +105,7 @@ public class ServerGame {
         public void tick(){
             this.x += this.dx / Server.TICKS_PER_SECOND;
             this.y += this.dy / Server.TICKS_PER_SECOND;
-        };
+        }
 
         public EntityType getType(){
             return this.type;
@@ -124,7 +125,7 @@ public class ServerGame {
 
     public ServerGame(Server server){
         this.server = server;
-        entities = new TreeMap<Integer, Entity>();
+        entities = new TreeMap<>();
     }
 
     public java.util.Map<Integer, Entity> getEntities(){
