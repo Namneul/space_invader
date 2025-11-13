@@ -84,7 +84,7 @@ public class ServerBossEntity extends ServerGame.Entity {
     public void hit(ServerGame.Entity otherEntity,int dmg){
         this.currentHP -= dmg;
         if (currentHP <= 0){
-            game.notifyBossKilled(this, ((ServerShotEntity) otherEntity).getOwnerId());
+            game.notifyBossKilled(((ServerShotEntity) otherEntity).getOwnerId());
             game.removeEntity(this.getId());
         }
         game.removeEntity(otherEntity.getId());

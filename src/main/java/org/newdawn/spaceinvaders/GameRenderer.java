@@ -105,7 +105,7 @@ public class GameRenderer {
     }
 
     private void drawEntities(Graphics2D g) {
-        TreeMap<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
+        java.util.Map<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
         if (entitiesToDraw == null) {
             return;
         }
