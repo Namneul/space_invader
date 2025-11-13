@@ -46,7 +46,7 @@ public class Game extends Canvas {
     private JFrame container;
     private JPanel gamePanel;
     private transient BufferStrategy strategy;
-    private static final String windowTitle = "Space Invaders";
+    private static final String WINDOW_TITLE = "Space Invaders";
 
     // sprite 변수
     private transient Sprite[] shipSprite = new Sprite[4];
@@ -81,11 +81,11 @@ public class Game extends Canvas {
 
     private transient LoginFrame loginFrame;
     private transient Process singlePlayServerProcess;
-    Logger logger = Logger.getLogger(getClass().getName());
+    private static final Logger logger = Logger.getLogger(Game.class.getName());
 
     public Game() {
         // create a frame to contain our game
-        container = new JFrame(windowTitle);
+        container = new JFrame(WINDOW_TITLE);
         gamePanel = (JPanel) container.getContentPane();
         gamePanel.setPreferredSize(new Dimension(800, 600));
         gamePanel.setLayout(null);
@@ -286,7 +286,6 @@ public class Game extends Canvas {
                 break;
             case ALIEN:
                 drawAlien(g, entity);
-                spriteToDraw = null;
                 break;
             case REFLECT_ALIEN:
                 spriteToDraw = this.reflectAlienSprite;
@@ -307,7 +306,6 @@ public class Game extends Canvas {
                 break;
             case BOSS:
                 drawBoss(g, entity);
-                spriteToDraw = null;
                 break;
             case LASER:
                 spriteToDraw = this.bossLaserSprite;
@@ -354,23 +352,24 @@ public class Game extends Canvas {
                 int effectY = (int) entity.getY() + (baseSprite.getHeight() / 2) - (effectSprite.getHeight() / 2);
                 effectSprite.draw(g, effectX, effectY);
             }
-        }
-        int maxHP = entity.getMaxHP();
-        int currentHP = entity.getCurrentHP();
 
-        if (maxHP > 0) {
-            int bossBarWidth = 100;
-            int bossBarHeight = 10;
-            int barX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
-            int barY = (int) entity.getY() - 15;
+            int maxHP = entity.getMaxHP();
+            int currentHP = entity.getCurrentHP();
 
-            g.setColor(Color.RED);
-            g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
-            double bossHealthPercent = (double) currentHP / maxHP;
-            g.setColor(Color.GREEN);
-            g.fillRect(barX, barY, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
-            g.setColor(Color.WHITE);
-            g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
+            if (maxHP > 0) {
+                int bossBarWidth = 100;
+                int bossBarHeight = 10;
+                int barX = (int) entity.getX() + (baseSprite.getWidth() / 2) - (bossBarWidth / 2);
+                int barY = (int) entity.getY() - 15;
+
+                g.setColor(Color.RED);
+                g.fillRect(barX, barY, bossBarWidth, bossBarHeight);
+                double bossHealthPercent = (double) currentHP / maxHP;
+                g.setColor(Color.GREEN);
+                g.fillRect(barX, barY, (int) (bossBarWidth * bossHealthPercent), bossBarHeight);
+                g.setColor(Color.WHITE);
+                g.drawRect(barX, barY, bossBarWidth, bossBarHeight);
+            }
         }
     }
 
