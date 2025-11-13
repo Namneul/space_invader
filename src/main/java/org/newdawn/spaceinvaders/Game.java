@@ -447,6 +447,154 @@ public class Game extends Canvas {
         }
     }
 
+    private void setupMenuButton(JButton button, int y, ImageIcon icon, ImageIcon hoverIcon) {
+        button.setBounds(275, y, 260, 70);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setContentAreaFilled(false);
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) { button.setIcon(hoverIcon); }
+            @Override
+            public void mouseExited(MouseEvent e) { button.setIcon(icon); }
+        });
+    }
+
+    private void onSinglePlayClicked() {
+        if (isGameLoopRunning || isConnecting) return;
+        isConnecting = true;
+
+        new Thread(() -> {
+            try {
+                String classpath = System.getProperty("java.class.path");
+                ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", String.valueOf(SINGLE_PLAYER_PORT), "single");
+                pb.redirectErrorStream(true);
+                pb.directory(new File("."));
+                this.singlePlayServerProcess = pb.start();
+                logger.info("--- 로컬 서버 프로세스 시작됨 ---");
+
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(singlePlayServerProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        logger.log(Level.INFO,"[Local Server]: {0}",line);
+                    }
+                }
+                logger.info("--- 로컬 서버 프로세스 종료됨 ---");
+
+            } catch (IOException ex) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(container, "로컬 서버 실행 실패: " + ex.getMessage());
+                    mainMenu();
+                });
+            } finally {
+                isConnecting = false;
+            }
+        }, "local-server-runner").start();
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // 서버가 켜질 때까지 1초 대기
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt(); // 중단 상태 복원
+                return;
+            }
+            startGame(DEFAULT_HOST, SINGLE_PLAYER_PORT);
+        }, "client-connect-starter").start();
+    }
+
+    private void onLoginClicked() {
+        loginFrame = new LoginFrame(this);
+        loginFrame.startlogin();
+    }
+
+    private void onRankClicked() {
+        new Thread(() -> {
+            Process serverProcess = null;
+            String tempPort = String.valueOf(RANK_SERVER_PORT);
+
+            try {
+                String classpath = System.getProperty("java.class.path");
+                ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
+                pb.redirectErrorStream(true);
+                serverProcess = pb.start();
+                logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
+
+                Process finalServerProcess = serverProcess;
+                new Thread(() -> {
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            logger.log(Level.INFO,"[Rank Server]: {0}",line);
+                        }
+                    } catch (IOException ioException) {
+                        // 서버 강제 종료 시 발생하는 예외는 의도적으로 무시
+                    }
+                }).start();
+
+                Thread.sleep(1000); // 서버 대기
+
+                Object response = sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
+
+                if (response instanceof RankResponse res) {
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            new RankBoard(res.getRanking());
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
+                        }
+                    });
+                }
+
+            } catch (IOException | ClassNotFoundException ex) {
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
+                ex.printStackTrace();
+            } catch (InterruptedException ex){
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
+                Thread.currentThread().interrupt();
+            } finally {
+                if (serverProcess != null && serverProcess.isAlive()) {
+                    logger.info("임시 랭킹 서버를 종료합니다.");
+                    serverProcess.destroyForcibly();
+                }
+            }
+        }, "rank-requester-thread").start();
+    }
+
+    private void onOnlineClicked() {
+        if (isConnecting || isGameLoopRunning) return; // SonarQube: Avoid deep nesting
+        isConnecting = true;
+
+        String ip = JOptionPane.showInputDialog("Enter Server Ip: ", DEFAULT_HOST);
+        if (ip == null || ip.trim().isEmpty()){
+            isConnecting = false;
+            return; // SonarQube: Avoid deep nesting
+        }
+
+        String portStr = JOptionPane.showInputDialog(container,"Enter Port Number",String.valueOf(MULTIPLAYER_DEFAULT_PORT));
+        if (portStr == null || portStr.trim().isEmpty()){
+            isConnecting = false;
+            return; // SonarQube: Avoid deep nesting
+        }
+
+        try {
+            int port = Integer.parseInt(portStr);
+            disconnectIfConnected();
+            startGame(ip, port);
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+                sendToServer(new PlayerInput(PlayerInput.Action.STOP));
+            }, "join-signal").start();
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(container, "유효한 숫자로 포트 번호를 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
+            isConnecting = false;
+        }
+    }
 
     public void mainMenu() {
 
@@ -461,15 +609,16 @@ public class Game extends Canvas {
             this.singlePlayServerProcess = null;
         }
 
-        JPanel panel = new JPanel() {
+        JPanel panel = new JPanel(){
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                if (mainBackground != null){
-                mainBackground.draw(g, 0, 0);
+                if(mainBackground != null) {
+                    mainBackground.draw(g,0,0);
                 }
             }
         };
+
         panel.setPreferredSize(new Dimension(800, 600));
         panel.setLayout(null);
 
@@ -490,235 +639,23 @@ public class Game extends Canvas {
                 new JButton(onlineIcon)
         };
 
-        for(int i=0;i<menuButtons.length;i++) {
-            panel.add(menuButtons[i]);
-        }
-        menuButtons[0].setBounds(275,293,260,70);
-        menuButtons[0].setBorderPainted(false);       // 버튼 테두리 설정 해제
-        menuButtons[0].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
-        menuButtons[0].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
-        menuButtons[1].setBounds(275,365,260,70);
-        menuButtons[1].setBorderPainted(false);       // 버튼 테두리 설정 해제
-        menuButtons[1].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
-        menuButtons[1].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
-        menuButtons[2].setBounds(275,436,260,70);
-        menuButtons[2].setBorderPainted(false);       // 버튼 테두리 설정 해제
-        menuButtons[2].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
-        menuButtons[2].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
-        menuButtons[3].setBounds(275,508,260,70);
-        menuButtons[3].setBorderPainted(false);       // 버튼 테두리 설정 해제
-        menuButtons[3].setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
-        menuButtons[3].setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        setupMenuButton(menuButtons[0], 293, startIcon, startIconHover);
+        setupMenuButton(menuButtons[1], 365, loginIcon, loginIconHover);
+        setupMenuButton(menuButtons[2], 436, rankIcon, rankIconHover);
+        setupMenuButton(menuButtons[3], 508, onlineIcon, onlineIconHover);
 
+        for(JButton btn : menuButtons) {
+            panel.add(btn);
+        }
         //메인화면 패널로 전환
         container.setContentPane(panel);
         container.revalidate();
         container.repaint();
 
-
-        menuButtons[0].addActionListener(e -> { // SinglePlay 버튼
-            if (isGameLoopRunning || isConnecting) return;
-            isConnecting = true;
-
-            new Thread(() -> {
-                try {
-                    String classpath = System.getProperty("java.class.path");
-                    ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", "1234", "single");
-                    pb.redirectErrorStream(true); // 에러 출력을 표준 출력으로 합쳐서 보기 편하게 함
-                    pb.directory(new File("."));
-                    this.singlePlayServerProcess = pb.start();
-                    logger.info("--- 로컬 서버 프로세스 시작됨 ---");
-
-                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(singlePlayServerProcess.getInputStream()))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            logger.log(Level.INFO,"[Local Server]: {0}",line);
-                        }
-                    }
-                    logger.info("--- 로컬 서버 프로세스 종료됨 ---");
-
-                } catch (IOException ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(container, "로컬 서버 실행 실패: " + ex.getMessage());
-                        mainMenu();
-                    });
-                } finally {
-                    isConnecting = false;
-                }
-            }, "local-server-runner").start();
-
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                    return;
-                }
-                startGame(DEFAULT_HOST, SINGLE_PLAYER_PORT);
-            }, "client-connect-starter").start();
-
-        });
-
-        menuButtons[1].addActionListener(e -> {
-            loginFrame = new LoginFrame(this);
-            loginFrame.startlogin();
-        });
-
-        menuButtons[2].addActionListener(e ->
-            // UI가 멈추지 않도록 모든 작업을 새 스레드에서 실행
-            new Thread(() -> {
-                Process serverProcess = null;
-                // 랭킹 확인만을 위한 임시 포트를 사용 (기존 서버와 충돌 방지)
-                String tempPort = String.valueOf(RANK_SERVER_PORT);
-
-                try {
-                    // 랭킹 확인 전용 임시 서버를 백그라운드에서 실행
-                    String classpath = System.getProperty("java.class.path");
-                    ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
-                    pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
-                    serverProcess = pb.start();
-                    logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
-
-                    // 서버 프로세스가 출력하는 로그를 실시간으로 보여주는 코드 (디버깅용)
-                    Process finalServerProcess = serverProcess;
-                    new Thread(() -> {
-                        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                logger.log(Level.INFO,"[Rank Server]: {0}",line);
-                            }
-                        } catch (IOException ioException) {
-                            // [수정] 랭킹 확인이 끝나고 메인 스레드가 서버 프로세스를
-                            // 강제 종료(destroyForcibly)할 때, 이 스트림이 닫히면서
-                            // "Stream closed" 등의 IOException이 발생하는 것은 정상입니다.
-                            // 따라서 이 예외는 의도적으로 무시합니다.
-                        }
-                    }).start();
-
-
-                    // 서버가 완전히 켜질 때까지 잠시 대기
-                    Thread.sleep(1000); // 0.5초
-
-                    // 이 메소드는 연결하고, 요청하고, 응답받고, 바로 연결을 끊습니다.
-                    Object response = sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
-
-                    if (response instanceof RankResponse res) {
-                        SwingUtilities.invokeLater(() -> {
-                            try {
-                                new RankBoard(res.getRanking());
-                            } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
-                            }
-                        });
-                    }
-
-                } catch (IOException | ClassNotFoundException ex) {
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
-                    ex.printStackTrace();
-
-                } catch (InterruptedException ex){
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
-                    Thread.currentThread().interrupt();
-                } finally {
-                    // 모든 작업이 끝나면 (성공하든 실패하든) 임시 서버 프로세스를 강제 종료
-                    if (serverProcess != null && serverProcess.isAlive()) {
-                        logger.info("임시 랭킹 서버를 종료합니다.");
-                        serverProcess.destroyForcibly();
-                    }
-                }
-            }, "rank-requester-thread").start()
-        );
-
-        menuButtons[3].addActionListener(e -> {
-            if (isConnecting || isGameLoopRunning) return;
-            isConnecting = true;
-
-            String ip = JOptionPane.showInputDialog("Enter Server Ip: ", DEFAULT_HOST);
-            if (ip == null || ip.trim().isEmpty()){
-                isConnecting = false;
-                return;
-            }
-
-            String portStr = JOptionPane.showInputDialog(container,"Enter Port Number",String.valueOf(MULTIPLAYER_DEFAULT_PORT));
-            if (portStr == null || portStr.trim().isEmpty()){
-                isConnecting = false;
-                return;
-            }
-            try {
-                int port = Integer.parseInt(portStr);
-                disconnectIfConnected();
-                startGame(ip, port);
-
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }
-                    sendToServer(new PlayerInput(PlayerInput.Action.STOP));
-                }, "join-signal").start();
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(container, "유효한 숫자로 포트 번호를 입력하세요.", "입력 오류", JOptionPane.ERROR_MESSAGE);
-                isConnecting = false;
-            }
-        });
-        menuButtons[0].addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                // 아이콘을 hover 이미지로 변경
-                menuButtons[0].setIcon(startIconHover);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                // 아이콘을 기본 이미지로 복원
-                menuButtons[0].setIcon(startIcon);
-            }
-        });
-
-        menuButtons[1].addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                // 아이콘을 hover 이미지로 변경
-                menuButtons[1].setIcon(loginIconHover);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                // 아이콘을 기본 이미지로 복원
-                menuButtons[1].setIcon(loginIcon);
-            }
-        });
-
-        menuButtons[2].addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                // 아이콘을 hover 이미지로 변경
-                menuButtons[2].setIcon(rankIconHover);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                // 아이콘을 기본 이미지로 복원
-                menuButtons[2].setIcon(rankIcon);
-            }
-        });
-
-        menuButtons[3].addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                // 아이콘을 hover 이미지로 변경
-                menuButtons[3].setIcon(onlineIconHover);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                // 아이콘을 기본 이미지로 복원
-                menuButtons[3].setIcon(onlineIcon);
-            }
-        });
-
-
+        menuButtons[0].addActionListener(e -> onSinglePlayClicked());
+        menuButtons[1].addActionListener(e -> onLoginClicked());
+        menuButtons[2].addActionListener(e -> onRankClicked());
+        menuButtons[3].addActionListener(e -> onOnlineClicked());
     }
 
     public void startMultiplay(String address, int port) throws IOException {
