@@ -11,7 +11,6 @@ import java.util.logging.*;
 
 public class ServerGame {
 
-    private volatile boolean isGameLoopRunning = false;
     private int alienCount;
     private int currentStageIndex;  // 현재 스테이지 인덱스
     private Stage currentStage;
@@ -41,11 +40,13 @@ public class ServerGame {
     }
 
 
-    public static abstract class Entity implements Serializable {
+    public abstract  static class Entity implements Serializable {
         protected transient ServerGame game;
         private int id;
-        protected double x, y;
-        private double width, height;
+        protected double x;
+        protected double y;
+        private double width;
+        private double height;
         protected double dx;
         protected double dy;
         protected EntityType type;
@@ -55,7 +56,7 @@ public class ServerGame {
 
 
 
-        public Entity(final ServerGame game,double width, double height, double x, double y) {
+        protected Entity(final ServerGame game,double width, double height, double x, double y) {
             this.game = game;
             this.id = this.game.getSmallestAvailableId();
             this.width = width;
@@ -104,7 +105,7 @@ public class ServerGame {
         public void tick(){
             this.x += this.dx / Server.TICKS_PER_SECOND;
             this.y += this.dy / Server.TICKS_PER_SECOND;
-        };
+        }
 
         public EntityType getType(){
             return this.type;
@@ -124,10 +125,10 @@ public class ServerGame {
 
     public ServerGame(Server server){
         this.server = server;
-        entities = new TreeMap<Integer, Entity>();
+        entities = new TreeMap<>();
     }
 
-    public TreeMap<Integer, Entity> getEntities(){
+    public java.util.Map<Integer, Entity> getEntities(){
         return entities;
     }
 
@@ -138,38 +139,73 @@ public class ServerGame {
 
     public void tick(){
         final TreeMap<Integer, Entity> entitiesCopy = new TreeMap<>(entities);
-        for (final Entity entity: entitiesCopy.values()){
+
+        // 2. 모든 엔티티의 상태를 업데이트합니다.
+        tickEntities(entitiesCopy);
+
+        // 3. 필요시 운석을 스폰합니다.
+        spawnMeteorsIfNeeded();
+
+        // 4. 요청된 외계인 로직을 업데이트합니다.
+        updateAlienLogic();
+        // 5. 요청된 보스 로직을 업데이트합니다.
+        updateBossLogic();
+
+        // 6. 엔티티 간의 충돌을 감지하고 처리합니다.
+        handleCollisions(entitiesCopy);
+
+        // 7. 제거 목록에 포함된 엔티티를 정리합니다.
+        removeDeadEntities();
+    }
+
+    private void tickEntities(java.util.Map<Integer, Entity> entitiesToTick){
+        for (final Entity entity: entitiesToTick.values()) {
             entity.tick();
         }
-        if (currentStageIndex>2 && Math.random()<0.003){
+    }
+
+    private void spawnMeteorsIfNeeded(){
+        if(currentStageIndex > 2 && Math.random()<0.003){
             spawnMeteor();
         }
-        if (logicUpdateRequested){
-            for (Entity entity: entities.values()){
-                if (entity instanceof ServerAlienEntity){
-                    ((ServerAlienEntity) entity).doLogic();
-                } else if (entity instanceof ServerReflectAlienEntity){
-                    ((ServerReflectAlienEntity) entity).doLogic();
+    }
+
+    private void updateAlienLogic() {
+        if(logicUpdateRequested){
+            for(Entity entity: entities.values()){
+                if(entity instanceof ServerAlienEntity serverAlienEntity){
+                    serverAlienEntity.doLogic();
+                } else if(entity instanceof ServerReflectAlienEntity serverReflectAlienEntity){
+                    serverReflectAlienEntity.doLogic();
                 }
             }
             this.logicUpdateRequested = false;
         }
+    }
+
+    private void updateBossLogic() {
         if (bossLogicUpdateRequested){
             for (Entity entity: entities.values()){
-                if (entity instanceof ServerBossEntity){
-                    ((ServerBossEntity) entity).doLogic();
+                if (entity instanceof ServerBossEntity serverBossEntity){
+                    serverBossEntity.doLogic();
                 }
             }
             this.bossLogicUpdateRequested = false;
         }
+    }
 
-        for (final Entity entity1 : entitiesCopy.values()) {
-            for (final Entity entity2 : entitiesCopy.values()) {
+    private void handleCollisions(java.util.Map<Integer, Entity> entitiesToCheck) {
+        // 이중 루프는 여전히 O(n^2)이지만, 이제 별도 메소드로 분리되었습니다.
+        for (final Entity entity1 : entitiesToCheck.values()) {
+            for (final Entity entity2 : entitiesToCheck.values()) {
                 if (entity1.isColliding(entity2)) {
                     entity1.handleCollision(entity2);
                 }
             }
         }
+    }
+
+    private void removeDeadEntities() {
         for (Integer id: removeList){
             entities.remove(id);
         }
@@ -369,15 +405,13 @@ public class ServerGame {
     }
 
 
-    public void notifyBossKilled(Entity boss, int killerId) {
+    public void notifyBossKilled(int killerId) {
         PlayerData killerData = server.getPlayerDataMap().get(killerId);
         if (killerData != null) {
             killerData.increaseBossKilledScore();
+            server.getLoginHost().insertScore(killerData.getId(), killerData.getScore());
+            logger.info("보스 처치! 최종 승리!");
         }
-        server.getLoginHost().insertScore(killerData.getId(), killerData.getScore());
-        logger.info("보스 처치! 최종 승리!");
-
-
 
         this.bossClear = true;
     }
@@ -398,8 +432,8 @@ public class ServerGame {
         logger.info("보스 패턴: 샷건 발사!");
         for (int i = -2; i <= 2; i++) {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
-            ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45, bossY + 100);
-            shot.setHorizontalMovement(i * 40);
+            ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45.0, bossY + 100.0);
+            shot.setHorizontalMovement(i * 40.0);
             entities.put(shot.getId(), shot);
         }
     }

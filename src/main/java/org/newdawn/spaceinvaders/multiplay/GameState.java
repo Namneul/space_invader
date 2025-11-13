@@ -19,7 +19,7 @@ public class GameState implements Serializable {
         this.status = status;
     }
 
-    public TreeMap<Integer, ServerGame.Entity> getEntities(){
+    public java.util.Map<Integer, ServerGame.Entity> getEntities(){
         return entities;
     }
     public int getCurrentScore(){
