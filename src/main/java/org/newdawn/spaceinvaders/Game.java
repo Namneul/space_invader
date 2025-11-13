@@ -508,56 +508,89 @@ public class Game extends Canvas {
     }
 
     private void onRankClicked() {
+        Process serverProcess = null;
+        String tempPort = String.valueOf(RANK_SERVER_PORT);
+
+        try {
+            // 1. 랭킹 서버 프로세스를 시작하고, 부팅될 때까지 대기합니다.
+            serverProcess = startRankServerProcess(tempPort);
+
+            // 2. 서버에 랭킹을 요청하고 응답을 받습니다.
+            Object response = sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
+
+            // 3. 응답을 처리하여 UI에 랭킹 보드를 띄웁니다.
+            handleRankResponse(response);
+
+        } catch (IOException | ClassNotFoundException ex) {
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
+            ex.printStackTrace();
+        } catch (InterruptedException ex){
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
+            Thread.currentThread().interrupt();
+        } finally {
+            // 4. 모든 작업이 끝나면 서버 프로세스를 확실히 종료시킵니다.
+            cleanupServerProcess(serverProcess);
+        }
+    }
+
+    /**
+     * [신규] 랭킹 확인용 임시 서버를 시작하고 1초간 대기합니다.
+     */
+    private Process startRankServerProcess(String tempPort) throws IOException, InterruptedException {
+        String classpath = System.getProperty("java.class.path");
+        ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
+        pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
+        Process serverProcess = pb.start();
+        logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
+
+        // 서버 프로세스의 로그를 읽는 별도 스레드를 시작
+        startProcessLogReader(serverProcess);
+
+        // 서버가 부팅될 때까지 1초 대기
+        Thread.sleep(1000);
+        return serverProcess;
+    }
+
+    /**
+     * [신규] 백그라운드 서버 프로세스의 로그를 읽어 콘솔에 출력하는 스레드를 시작합니다.
+     */
+    private void startProcessLogReader(Process process) {
         new Thread(() -> {
-            Process serverProcess = null;
-            String tempPort = String.valueOf(RANK_SERVER_PORT);
-
-            try {
-                String classpath = System.getProperty("java.class.path");
-                ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
-                pb.redirectErrorStream(true);
-                serverProcess = pb.start();
-                logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
-
-                Process finalServerProcess = serverProcess;
-                new Thread(() -> {
-                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(finalServerProcess.getInputStream()))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            logger.log(Level.INFO,"[Rank Server]: {0}",line);
-                        }
-                    } catch (IOException ioException) {
-                        // 서버 강제 종료 시 발생하는 예외는 의도적으로 무시
-                    }
-                }).start();
-
-                Thread.sleep(1000); // 서버 대기
-
-                Object response = sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
-
-                if (response instanceof RankResponse res) {
-                    SwingUtilities.invokeLater(() -> {
-                        try {
-                            new RankBoard(res.getRanking());
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
-                        }
-                    });
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    logger.log(Level.INFO,"[Rank Server]: {0}",line);
                 }
-
-            } catch (IOException | ClassNotFoundException ex) {
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 정보를 가져오는 데 실패했습니다: " + ex.getMessage()));
-                ex.printStackTrace();
-            } catch (InterruptedException ex){
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
-                Thread.currentThread().interrupt();
-            } finally {
-                if (serverProcess != null && serverProcess.isAlive()) {
-                    logger.info("임시 랭킹 서버를 종료합니다.");
-                    serverProcess.destroyForcibly();
-                }
+            } catch (IOException ioException) {
+                // 서버 프로세스가 강제 종료되면(finally) 이 예외는 정상입니다.
+                // 의도적으로 무시합니다.
             }
-        }, "rank-requester-thread").start();
+        }, "rank-server-log-reader").start();
+    }
+
+    /**
+     * [신규] 서버로부터 받은 랭킹 응답을 처리하여 RankBoard를 띄웁니다.
+     */
+    private void handleRankResponse(Object response) {
+        if (response instanceof RankResponse res) { // Java 16+ 패턴 매칭
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    new RankBoard(res.getRanking());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
+                }
+            });
+        }
+    }
+
+    /**
+     * [신규] 임시 서버 프로세스를 강제로 종료합니다.
+     */
+    private void cleanupServerProcess(Process serverProcess) {
+        if (serverProcess != null && serverProcess.isAlive()) {
+            logger.info("임시 랭킹 서버를 종료합니다.");
+            serverProcess.destroyForcibly();
+        }
     }
 
     private void onOnlineClicked() {
