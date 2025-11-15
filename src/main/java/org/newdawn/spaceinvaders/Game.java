@@ -37,9 +37,7 @@ public class Game extends Canvas implements NetworkListener{
     private volatile boolean isConnecting = false;
     private GameState currentGameState; // 서버가 보내주는 최신 게임 상태
 
-    private boolean leftPressed = false;
-    private boolean rightPressed = false;
-    private boolean firePressed = false;
+    private transient InputManager inputManager;
 
     private transient LoginFrame loginFrame;
     private transient Process singlePlayServerProcess;
@@ -69,9 +67,9 @@ public class Game extends Canvas implements NetworkListener{
             }
         });
 
-        // add a key input system (defined below) to our canvas
-        // so we can respond to key pressed
-        addKeyListener(new KeyInputHandler());
+        inputManager = new InputManager();
+        addKeyListener(inputManager);
+
         requestFocus();
 
     }
@@ -138,16 +136,16 @@ public class Game extends Canvas implements NetworkListener{
     }
 
     private void handleInput(){
-        if (leftPressed){
+        if (inputManager.isLeftPressed()){
             networkClient.sendToServer(new PlayerInput(PlayerInput.Action.MOVE_LEFT));
         }
-        if (rightPressed){
+        if (inputManager.isRightPressed()){
             networkClient.sendToServer(new PlayerInput(PlayerInput.Action.MOVE_RIGHT));
         }
-        if (firePressed){
+        if (inputManager.isFirePressed()){
             networkClient.sendToServer(new PlayerInput(PlayerInput.Action.FIRE));
         }
-        if (!leftPressed && !rightPressed){
+        if (!inputManager.isLeftPressed() && !inputManager.isRightPressed()){
             networkClient.sendToServer(new PlayerInput(PlayerInput.Action.STOP));
         }
     }
@@ -173,52 +171,6 @@ public class Game extends Canvas implements NetworkListener{
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-
-    private class KeyInputHandler extends KeyAdapter {
-        @Override
-        public void keyPressed(KeyEvent e) {
-
-            switch (e.getKeyCode()) {
-                case KeyEvent.VK_LEFT:
-                    leftPressed = true;
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    rightPressed = true;
-                    break;
-                case KeyEvent.VK_SPACE:
-                    firePressed = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-        @Override
-        public void keyReleased(KeyEvent e) {
-            if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-                leftPressed = false;
-            }
-            if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-                rightPressed = false;
-            }
-            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                firePressed = false;
-            }
-        }
-    }
-
-    private void setupMenuButton(JButton button, int y, ImageIcon icon, ImageIcon hoverIcon) {
-        button.setBounds(275, y, 260, 70);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) { button.setIcon(hoverIcon); }
-            @Override
-            public void mouseExited(MouseEvent e) { button.setIcon(icon); }
-        });
     }
 
     private void onSinglePlayClicked() {
@@ -386,26 +338,21 @@ public class Game extends Canvas implements NetworkListener{
             this.singlePlayServerProcess = null;
         }
 
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (gameRenderer != null && gameRenderer.getMainBackground() != null){
-                gameRenderer.getMainBackground().draw(g, 0, 0);
-                }
-            }
-        };
-        panel.setPreferredSize(new Dimension(800, 600));
-        panel.setLayout(null);
+        MainMenuPanel menuPanel = new MainMenuPanel(
+                e -> onSinglePlayClicked(),
+                e -> showLoginFrame(),
+                e -> onRankClicked(),
+                e -> onOnlineClicked()
+        );
+
+        container.setContentPane(menuPanel);
+        container.revalidate();
+        container.repaint();
 
         ImageIcon startIcon = new ImageIcon(getClass().getClassLoader().getResource("button/startBtn.png"));
         ImageIcon loginIcon = new ImageIcon(getClass().getClassLoader().getResource("button/loginBtn.png"));
         ImageIcon rankIcon = new ImageIcon(getClass().getClassLoader().getResource("button/rankBtn.png"));
         ImageIcon onlineIcon = new ImageIcon(getClass().getClassLoader().getResource("button/onlineBtn.png"));
-        ImageIcon startIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/startBtn_hover.png"));
-        ImageIcon loginIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/loginBtn_hover.png"));
-        ImageIcon rankIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/rankBtn_hover.png"));
-        ImageIcon onlineIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/onlineBtn_hover.png"));
 
         //버튼 생성
         JButton[] menuButtons = {
@@ -414,20 +361,6 @@ public class Game extends Canvas implements NetworkListener{
                 new JButton(rankIcon),
                 new JButton(onlineIcon)
         };
-
-        setupMenuButton(menuButtons[0], 293, startIcon, startIconHover);
-        setupMenuButton(menuButtons[1], 365, loginIcon, loginIconHover);
-        setupMenuButton(menuButtons[2], 436, rankIcon, rankIconHover);
-        setupMenuButton(menuButtons[3], 508, onlineIcon, onlineIconHover);
-
-        for(JButton btn : menuButtons) {
-            panel.add(btn);
-        }
-
-        //메인화면 패널로 전환
-        container.setContentPane(panel);
-        container.revalidate();
-        container.repaint();
 
         menuButtons[0].addActionListener(e -> onSinglePlayClicked());
         menuButtons[1].addActionListener(e -> showLoginFrame());
