@@ -88,9 +88,9 @@ public class ServerBossEntity extends ServerGame.Entity {
             game.removeEntity(this.getId());
         }
         game.removeEntity(otherEntity.getId());
-        if (Math.random()<0.2){
-            game.itemDrop(this);
-        }
+//        if (Math.random()<0.2){
+//            game.(this);
+//        }
     }
 
 

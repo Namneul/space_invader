@@ -21,11 +21,12 @@ public class ServerGame {
 
     private Server server;
     private ArrayList<Stage> stages;
-    private final Random random = new Random();
+//    private final Random random = new Random();
     private boolean bossClear = false;
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final EntityManager entityManager;
+    private final EntityFactory entityFactory;
 
 
     public enum EntityType{
@@ -127,6 +128,7 @@ public class ServerGame {
     public ServerGame(Server server){
         this.server = server;
         this.entityManager = new EntityManager();
+        this.entityFactory = new EntityFactory(this, this.entityManager);
     }
 
     public java.util.Map<Integer, Entity> getEntities(){
@@ -181,8 +183,7 @@ public class ServerGame {
     }
 
     public void alienFires(Entity alien){
-        ServerAlienShotEntity shot = new ServerAlienShotEntity(this, alien.getX(), alien.getY());
-        entityManager.addEntity(shot);
+        entityFactory.createAlienShot(alien.getX(), alien.getY());
     }
 
     public void notifyAlienKilled(Entity alien, int killerId) {
@@ -203,7 +204,7 @@ public class ServerGame {
         }
 
         if(Math.random()<0.2){
-            itemDrop(alien);
+            entityFactory.createItemDrop(alien.getX(), alien.getY());
         }
         // if there are still some aliens left then they all need to get faster, so
         // speed up all the existing aliens
@@ -249,8 +250,7 @@ public class ServerGame {
             }
             if (!bossExists) {
                 logger.info("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
-                ServerBossEntity boss = new ServerBossEntity(this, 350, 50);
-                entityManager.addEntity(boss);
+                entityFactory.createBoss(350,50);
                 return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
             }
         }
@@ -270,14 +270,14 @@ public class ServerGame {
         else {
            logger.log(Level.INFO,"[서버 로그] 다음 스테이지({0})를 시작합니다.", (currentStageIndex + 1));
             currentStage = stages.get(currentStageIndex);
-            currentStage.initialize(this, entityManager); // 다음 스테이지의 적들을 생성합니다.
+            currentStage.initialize(this, entityManager, entityFactory); // 다음 스테이지의 적들을 생성합니다.
         }
     }
 
-    public void itemDrop(Entity alien){
-        ServerEvolveItemEntity item = new ServerEvolveItemEntity(this, alien.getX(), alien.getY());
-        entityManager.addEntity(item);
-    }
+//    public void itemDrop(Entity alien){
+//        ServerEvolveItemEntity item = new ServerEvolveItemEntity(this, alien.getX(), alien.getY());
+//        entityManager.addEntity(item);
+//    }
 
     private void loadStages(){
         stages = new ArrayList<>();
@@ -293,8 +293,7 @@ public class ServerGame {
     }
 
     public int spawnPlayerEntity() {
-        ServerPlayerShipEntity playerShip = new ServerPlayerShipEntity(this, 370, 550);
-        entityManager.addEntity(playerShip);
+        ServerPlayerShipEntity playerShip = entityFactory.createPlayerShip(370, 550);
 
         server.getPlayerDataMap().computeIfAbsent(playerShip.getId(), id -> new PlayerData("Gues- "+id));
         logger.log(Level.INFO,"Server: 플레이어 생성 완료. 총 엔티티 수: {0}",entityManager.getEntities().size());
@@ -344,10 +343,7 @@ public class ServerGame {
             return;
         }
         playerShip.setLastFireTime();
-        int owner = playerShip.getId();
-        int shipUpgradeCount = playerShip.getUpgradeCount();
-        ServerShotEntity shot = new  ServerShotEntity(this, playerShip.getX(), playerShip.getY(), owner, shipUpgradeCount);
-        entityManager.addEntity(shot);
+        entityFactory.createPlayerShot(playerShip);
     }
 
     public void initializeFirstStage(){
@@ -357,15 +353,12 @@ public class ServerGame {
 
         currentStageIndex = 0;
         currentStage = stages.get(currentStageIndex);
-        currentStage.initialize(this, entityManager);
+        currentStage.initialize(this, entityManager, entityFactory);
         logger.info("ServerGame: "+currentStage.getStageName()+" initialized.");
     }
 
     public void spawnMeteor(){
-        int randomX = random.nextInt(800);
-
-        ServerMeteoriteEntity meteorite = new ServerMeteoriteEntity(this, randomX, -50);
-        entityManager.addEntity(meteorite);
+        entityFactory.createMeteor();
     }
 
     public void addEntity(Entity entity){
@@ -388,10 +381,7 @@ public class ServerGame {
         logger.info("보스 패턴: 하수인 소환!");
         alienCount++;
         for (int i = 0; i < 5; i++) {
-            // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
-            ServerAlienEntity minion = new ServerAlienEntity(this, bossX - 100 + (i * 50), bossY + 50);
-            minion.setHP(50);
-            entityManager.addEntity(minion);
+            entityFactory.createBossMinion(bossX - 100 + (i * 50), bossY + 50);
             alienCount++;
         }
     }
@@ -400,16 +390,12 @@ public class ServerGame {
         logger.info("보스 패턴: 샷건 발사!");
         for (int i = -2; i <= 2; i++) {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
-            ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45.0, bossY + 100.0);
-            shot.setHorizontalMovement(i * 40.0);
-            entityManager.addEntity(shot);
+            entityFactory.createBossShotgunShot(bossX + 45.0, bossY + 100.0, i * 40.0);
         }
     }
 
     public void bossFiresLaser(ServerBossEntity boss) {
-        // ServerGame이 직접 레이저를 생성하고 entities 맵에 추가합니다.
-        ServerLaserEntity laser = new ServerLaserEntity(this, boss);
-        entityManager.addEntity(laser);
+        entityFactory.createBossLaser(boss);
     }
 
     public int getNextAvailableId(){
