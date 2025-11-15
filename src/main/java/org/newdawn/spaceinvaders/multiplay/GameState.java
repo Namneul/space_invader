@@ -1,25 +1,25 @@
 package org.newdawn.spaceinvaders.multiplay;
 
 import java.io.Serializable;
-import java.util.TreeMap;
+import java.util.Map;
 
 public class GameState implements Serializable {
 
     public enum GameStatus {PLAYING, GAME_OVER, STAGE_CLEAR}
 
-    private TreeMap<Integer, ServerGame.Entity> entities;
+    private Map<Integer, ServerGame.Entity> entities;
     private final int currentScore;
     private final int remainingLives;
     private final GameStatus status;
 
-    public GameState(TreeMap<Integer, ServerGame.Entity> entities, int score, int lives, GameStatus status){
+    public GameState(Map<Integer, ServerGame.Entity> entities, int score, int lives, GameStatus status){
         this.entities = entities;
         this.currentScore = score;
         this.remainingLives = lives;
         this.status = status;
     }
 
-    public java.util.Map<Integer, ServerGame.Entity> getEntities(){
+    public Map<Integer, ServerGame.Entity> getEntities(){
         return entities;
     }
     public int getCurrentScore(){

@@ -5,8 +5,9 @@ import org.newdawn.spaceinvaders.multiplay.stage.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+
 import java.util.Random;
-import java.util.TreeMap;
+
 import java.util.logging.*;
 
 public class ServerGame {
@@ -17,14 +18,14 @@ public class ServerGame {
     public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
     private boolean logicUpdateRequested = false;
     private boolean bossLogicUpdateRequested = false;
-    private ArrayList<Integer> removeList = new ArrayList<>();
+
     private Server server;
-    private int smallestAvailableId = 0;
-    private TreeMap<Integer, Entity> entities;
     private ArrayList<Stage> stages;
     private final Random random = new Random();
     private boolean bossClear = false;
     Logger logger = Logger.getLogger(getClass().getName());
+
+    private final EntityManager entityManager;
 
 
     public enum EntityType{
@@ -58,7 +59,7 @@ public class ServerGame {
 
         protected Entity(final ServerGame game,double width, double height, double x, double y) {
             this.game = game;
-            this.id = this.game.getSmallestAvailableId();
+            this.id = this.game.getNextAvailableId();
             this.width = width;
             this.height = height;
             this.x = x;
@@ -125,23 +126,20 @@ public class ServerGame {
 
     public ServerGame(Server server){
         this.server = server;
-        entities = new TreeMap<>();
+        this.entityManager = new EntityManager();
     }
 
     public java.util.Map<Integer, Entity> getEntities(){
-        return entities;
+        return entityManager.getEntities();
     }
 
     public void removeEntity(final int id){
 
-        removeList.add(id);
+        entityManager.removeEntity(id);
     }
 
     public void tick(){
-        final TreeMap<Integer, Entity> entitiesCopy = new TreeMap<>(entities);
-
-        // 2. 모든 엔티티의 상태를 업데이트합니다.
-        tickEntities(entitiesCopy);
+        entityManager.updateAll();
 
         // 3. 필요시 운석을 스폰합니다.
         spawnMeteorsIfNeeded();
@@ -150,18 +148,6 @@ public class ServerGame {
         updateAlienLogic();
         // 5. 요청된 보스 로직을 업데이트합니다.
         updateBossLogic();
-
-        // 6. 엔티티 간의 충돌을 감지하고 처리합니다.
-        handleCollisions(entitiesCopy);
-
-        // 7. 제거 목록에 포함된 엔티티를 정리합니다.
-        removeDeadEntities();
-    }
-
-    private void tickEntities(java.util.Map<Integer, Entity> entitiesToTick){
-        for (final Entity entity: entitiesToTick.values()) {
-            entity.tick();
-        }
     }
 
     private void spawnMeteorsIfNeeded(){
@@ -172,7 +158,7 @@ public class ServerGame {
 
     private void updateAlienLogic() {
         if(logicUpdateRequested){
-            for(Entity entity: entities.values()){
+            for(Entity entity: entityManager.getEntities().values()){
                 if(entity instanceof ServerAlienEntity serverAlienEntity){
                     serverAlienEntity.doLogic();
                 } else if(entity instanceof ServerReflectAlienEntity serverReflectAlienEntity){
@@ -185,7 +171,7 @@ public class ServerGame {
 
     private void updateBossLogic() {
         if (bossLogicUpdateRequested){
-            for (Entity entity: entities.values()){
+            for (Entity entity: entityManager.getEntities().values()){
                 if (entity instanceof ServerBossEntity serverBossEntity){
                     serverBossEntity.doLogic();
                 }
@@ -194,27 +180,9 @@ public class ServerGame {
         }
     }
 
-    private void handleCollisions(java.util.Map<Integer, Entity> entitiesToCheck) {
-        // 이중 루프는 여전히 O(n^2)이지만, 이제 별도 메소드로 분리되었습니다.
-        for (final Entity entity1 : entitiesToCheck.values()) {
-            for (final Entity entity2 : entitiesToCheck.values()) {
-                if (entity1.isColliding(entity2)) {
-                    entity1.handleCollision(entity2);
-                }
-            }
-        }
-    }
-
-    private void removeDeadEntities() {
-        for (Integer id: removeList){
-            entities.remove(id);
-        }
-        removeList.clear();
-    }
-
     public void alienFires(Entity alien){
         ServerAlienShotEntity shot = new ServerAlienShotEntity(this, alien.getX(), alien.getY());
-        entities.put(shot.getId(), shot);
+        entityManager.addEntity(shot);
     }
 
     public void notifyAlienKilled(Entity alien, int killerId) {
@@ -226,7 +194,7 @@ public class ServerGame {
 
         alienCount--;
         if (alienCount <= 0){
-            for(Entity entity: entities.values()){
+            for(Entity entity: entityManager.getEntities().values()){
                 if (entity instanceof ServerReflectAlienEntity){
                     removeEntity(entity.getId());
                 }
@@ -239,7 +207,7 @@ public class ServerGame {
         }
         // if there are still some aliens left then they all need to get faster, so
         // speed up all the existing aliens
-        for (Entity entity: entities.values()){
+        for (Entity entity: entityManager.getEntities().values()){
             if (entity instanceof ServerAlienEntity || entity instanceof ServerReflectAlienEntity) {
                 // speed up by 2%
                 entity.setMoveSpeed(entity.getMoveSpeed()*1.02);
@@ -259,7 +227,7 @@ public class ServerGame {
                 removeEntity(deadPlayerId);
                     server.getLoginHost().insertScore(deadPlayerData.getId(), deadPlayerData.getScore());
             } else {
-                Entity ship = entities.get(deadPlayerId);
+                Entity ship = entityManager.getEntity(deadPlayerId);
                 if (ship != null){
                     ship.setX(370);
                     ship.setY(550);
@@ -273,7 +241,7 @@ public class ServerGame {
         if (currentStageIndex == 4) {
             // 보스가 아직 없다면 보스를 생성
             boolean bossExists = false;
-            for (Entity e : entities.values()) {
+            for (Entity e : entityManager.getEntities().values()) {
                 if (e instanceof ServerBossEntity) {
                     bossExists = true;
                     break;
@@ -282,7 +250,7 @@ public class ServerGame {
             if (!bossExists) {
                 logger.info("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
                 ServerBossEntity boss = new ServerBossEntity(this, 350, 50);
-                entities.put(boss.getId(), boss);
+                entityManager.addEntity(boss);
                 return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
             }
         }
@@ -302,13 +270,13 @@ public class ServerGame {
         else {
            logger.log(Level.INFO,"[서버 로그] 다음 스테이지({0})를 시작합니다.", (currentStageIndex + 1));
             currentStage = stages.get(currentStageIndex);
-            currentStage.initialize(this, entities); // 다음 스테이지의 적들을 생성합니다.
+            currentStage.initialize(this, entityManager); // 다음 스테이지의 적들을 생성합니다.
         }
     }
 
     public void itemDrop(Entity alien){
         ServerEvolveItemEntity item = new ServerEvolveItemEntity(this, alien.getX(), alien.getY());
-        entities.put(item.getId(), item);
+        entityManager.addEntity(item);
     }
 
     private void loadStages(){
@@ -326,10 +294,10 @@ public class ServerGame {
 
     public int spawnPlayerEntity() {
         ServerPlayerShipEntity playerShip = new ServerPlayerShipEntity(this, 370, 550);
-        entities.put(playerShip.getId(), playerShip);
+        entityManager.addEntity(playerShip);
 
         server.getPlayerDataMap().computeIfAbsent(playerShip.getId(), id -> new PlayerData("Gues- "+id));
-        logger.log(Level.INFO,"Server: 플레이어 생성 완료. 총 엔티티 수: {0}",entities.size());
+        logger.log(Level.INFO,"Server: 플레이어 생성 완료. 총 엔티티 수: {0}",entityManager.getEntities().size());
         return playerShip.getId();
     }
 
@@ -342,7 +310,7 @@ public class ServerGame {
 
     public void processPlayerInput(int playerShipId, PlayerInput receivedInput){
 
-        Entity playerShip = entities.get(playerShipId);
+        Entity playerShip = entityManager.getEntity(playerShipId);
         if (playerShip == null){
             return;
         }
@@ -379,7 +347,7 @@ public class ServerGame {
         int owner = playerShip.getId();
         int shipUpgradeCount = playerShip.getUpgradeCount();
         ServerShotEntity shot = new  ServerShotEntity(this, playerShip.getX(), playerShip.getY(), owner, shipUpgradeCount);
-        entities.put(shot.getId(), shot);
+        entityManager.addEntity(shot);
     }
 
     public void initializeFirstStage(){
@@ -389,7 +357,7 @@ public class ServerGame {
 
         currentStageIndex = 0;
         currentStage = stages.get(currentStageIndex);
-        currentStage.initialize(this, entities);
+        currentStage.initialize(this, entityManager);
         logger.info("ServerGame: "+currentStage.getStageName()+" initialized.");
     }
 
@@ -397,11 +365,11 @@ public class ServerGame {
         int randomX = random.nextInt(800);
 
         ServerMeteoriteEntity meteorite = new ServerMeteoriteEntity(this, randomX, -50);
-        entities.put(meteorite.getId(), meteorite);
+        entityManager.addEntity(meteorite);
     }
 
     public void addEntity(Entity entity){
-        entities.put(entity.getId(), entity);
+        entityManager.addEntity(entity);
     }
 
 
@@ -423,7 +391,7 @@ public class ServerGame {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
             ServerAlienEntity minion = new ServerAlienEntity(this, bossX - 100 + (i * 50), bossY + 50);
             minion.setHP(50);
-            entities.put(minion.getId(), minion);
+            entityManager.addEntity(minion);
             alienCount++;
         }
     }
@@ -434,19 +402,19 @@ public class ServerGame {
             // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
             ServerAlienShotEntity shot = new ServerAlienShotEntity(this, bossX + 45.0, bossY + 100.0);
             shot.setHorizontalMovement(i * 40.0);
-            entities.put(shot.getId(), shot);
+            entityManager.addEntity(shot);
         }
     }
 
     public void bossFiresLaser(ServerBossEntity boss) {
         // ServerGame이 직접 레이저를 생성하고 entities 맵에 추가합니다.
         ServerLaserEntity laser = new ServerLaserEntity(this, boss);
-        entities.put(laser.getId(), laser);
+        entityManager.addEntity(laser);
     }
 
-
-
-    private int getSmallestAvailableId() {return smallestAvailableId++;}
+    public int getNextAvailableId(){
+        return entityManager.getNextAvailableId();
+    }
 
 }
 

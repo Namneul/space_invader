@@ -16,7 +16,7 @@ public class MainMenuPanel extends JPanel {
         this.setPreferredSize(new Dimension(800, 600));
         this.setLayout(null);
 
-        URL url = getClass().getClassLoader().getResource("sprites/main_background.png");
+        URL url = getClass().getClassLoader().getResource("mainBackground.png");
         if (url != null){
             this.backgroundImage = new ImageIcon(url).getImage();
         }
