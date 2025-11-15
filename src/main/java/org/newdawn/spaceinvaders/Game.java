@@ -28,7 +28,7 @@ public class Game extends Canvas implements NetworkListener{
     private JPanel gamePanel;
     private transient GameRenderer gameRenderer;
     private transient BufferStrategy strategy;
-    private static final String windowTitle = "Space Invaders";
+    private static final String WINDOW_TITLE = "Space Invaders";
 
     private transient NetworkClient networkClient;
 
@@ -45,7 +45,7 @@ public class Game extends Canvas implements NetworkListener{
 
     public Game() {
         // create a frame to contain our game
-        container = new JFrame(windowTitle);
+        container = new JFrame(WINDOW_TITLE);
         gamePanel = (JPanel) container.getContentPane();
         gamePanel.setPreferredSize(new Dimension(800, 600));
         gamePanel.setLayout(null);
