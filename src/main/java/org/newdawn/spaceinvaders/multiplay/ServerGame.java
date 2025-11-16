@@ -1,30 +1,28 @@
 package org.newdawn.spaceinvaders.multiplay;
 
 import org.newdawn.spaceinvaders.multiplay.ServerEntity.*;
-import org.newdawn.spaceinvaders.multiplay.stage.*;
-
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.logging.*;
 
 public class ServerGame {
 
-    private int alienCount;
+//    private int alienCount;
 //    private int currentStageIndex;  // 현재 스테이지 인덱스
 //    private Stage currentStage;
-    public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
     private boolean logicUpdateRequested = false;
     private boolean bossLogicUpdateRequested = false;
 
     private Server server;
 //    private ArrayList<Stage> stages;
 //    private final Random random = new Random();
-    private boolean bossClear = false;
+//    private boolean bossClear = false;
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final EntityManager entityManager;
     private final EntityFactory entityFactory;
     private final StageManager stageManager;
+    private final GameRules gameRules;
 
 
     public enum EntityType{
@@ -128,15 +126,24 @@ public class ServerGame {
         this.entityManager = new EntityManager();
         this.entityFactory = new EntityFactory(this, this.entityManager);
         this.stageManager = new StageManager(this, entityManager, entityFactory);
+        this.gameRules = new GameRules(this, entityManager, entityFactory, stageManager);
         this.stageManager.initializeFirstStage();
+
     }
 
     public java.util.Map<Integer, Entity> getEntities(){
         return entityManager.getEntities();
     }
 
-    public void removeEntity(final int id){
+    public Login getLoginHost() {
+        return server.getLoginHost();
+    }
 
+    public Map<Integer, PlayerData> getPlayerDataMap() {
+        return server.getPlayerDataMap();
+    }
+
+    public void removeEntity(final int id){
         entityManager.removeEntity(id);
     }
 
@@ -180,65 +187,21 @@ public class ServerGame {
     }
 
     public void notifyAlienKilled(Entity alien, int killerId) {
-
-        PlayerData killerData = server.getPlayerDataMap().get(killerId);
-        if (killerData != null){
-            killerData.increaseScore();
-        }
-
-        alienCount--;
-        if (alienCount <= 0){
-            for(Entity entity: entityManager.getEntities().values()){
-                if (entity instanceof ServerReflectAlienEntity){
-                    removeEntity(entity.getId());
-                }
-            }
-            stageManager.progressToNextStage();
-        }
-
-        if(Math.random()<0.2){
-            entityFactory.createItemDrop(alien.getX(), alien.getY());
-        }
-        // if there are still some aliens left then they all need to get faster, so
-        // speed up all the existing aliens
-        for (Entity entity: entityManager.getEntities().values()){
-            if (entity instanceof ServerAlienEntity || entity instanceof ServerReflectAlienEntity) {
-                // speed up by 2%
-                entity.setMoveSpeed(entity.getMoveSpeed()*1.02);
-            }
-        }
+        gameRules.notifyAlienKilled(alien, killerId);
     }
 
-    public boolean isBossClear(){return bossClear;}
+    public boolean isBossClear(){return gameRules.isBossClear();}
 
    public void notifyDeath(int deadPlayerId) {
-
-        PlayerData deadPlayerData = server.getPlayerDataMap().get(deadPlayerId);
-        if (deadPlayerData != null){
-            deadPlayerData.decreaseLives();
-
-            if (deadPlayerData.getLives() <= 0){
-                removeEntity(deadPlayerId);
-                    server.getLoginHost().insertScore(deadPlayerData.getId(), deadPlayerData.getScore());
-            } else {
-                Entity ship = entityManager.getEntity(deadPlayerId);
-                if (ship != null){
-                    ship.setX(370);
-                    ship.setY(550);
-                }
-            }
-        }
+        gameRules.notifyDeath(deadPlayerId);
     }
     public void handleGameWin() {
         // 점수 저장 로직
-        for (PlayerData data : server.getPlayerDataMap().values()) {
-            server.getLoginHost().insertScore(data.getId(), data.getScore());
-        }
-        this.bossClear = true; // 게임 승리 플래그를 설정합니다.
+        gameRules.handleGameWin();
     }
 
     public void setAlienCount(int alienCount){
-        this.alienCount = alienCount;
+        gameRules.setAlienCount(alienCount);
     }
 
     public int spawnPlayerEntity() {
@@ -257,73 +220,31 @@ public class ServerGame {
     }
 
     public void processPlayerInput(int playerShipId, PlayerInput receivedInput){
-
-        Entity playerShip = entityManager.getEntity(playerShipId);
-        if (playerShip == null){
-            return;
-        }
-
-        ServerPlayerShipEntity playerShipEntity = (ServerPlayerShipEntity) playerShip;
-
-        switch (receivedInput.getAction()){
-            case MOVE_LEFT:
-                if (!playerShipEntity.isPlayerStunned()){
-                    playerShip.setHorizontalMovement(-playerShip.getMoveSpeed());
-                }
-                break;
-            case MOVE_RIGHT:
-                if (!playerShipEntity.isPlayerStunned()){
-                    playerShip.setHorizontalMovement(playerShip.getMoveSpeed());
-                }
-                break;
-            case FIRE:
-                if (!playerShipEntity.isPlayerStunned()){
-                tryToFire((ServerPlayerShipEntity) playerShip);
-                }
-                break;
-            case STOP:
-                playerShip.setHorizontalMovement(0);
-                break;
-        }
+        gameRules.processPlayerInput(playerShipId, receivedInput);
     }
 
-    public void tryToFire(ServerPlayerShipEntity playerShip){
-        if (System.currentTimeMillis() - playerShip.getLastFireTime() < 500){
-            return;
-        }
-        playerShip.setLastFireTime();
-        entityFactory.createPlayerShot(playerShip);
-    }
-
-    public void addEntity(Entity entity){
-        entityManager.addEntity(entity);
-    }
+//    public void addEntity(Entity entity){
+//        entityManager.addEntity(entity);
+//    }
 
 
     public void notifyBossKilled(int killerId) {
-        PlayerData killerData = server.getPlayerDataMap().get(killerId);
-        if (killerData != null) {
-            killerData.increaseBossKilledScore();
-            server.getLoginHost().insertScore(killerData.getId(), killerData.getScore());
-            logger.info("보스 처치! 최종 승리!");
-        }
-
-        this.bossClear = true;
+        gameRules.notifyBossKilled(killerId);
     }
 
     public void bossSummonsMinions(int bossX, int bossY) {
         logger.info("보스 패턴: 하수인 소환!");
-        alienCount++;
+        gameRules.incrementAlienCount(1);
         for (int i = 0; i < 5; i++) {
             entityFactory.createBossMinion(bossX - 100 + (i * 50), bossY + 50);
-            alienCount++;
+            gameRules.incrementAlienCount(1);
         }
     }
 
     public void bossFiresShotgun(int bossX, int bossY) {
         logger.info("보스 패턴: 샷건 발사!");
         for (int i = -2; i <= 2; i++) {
-            // 기존 방식대로 ServerGame이 직접 생성하고 추가합니다.
+
             entityFactory.createBossShotgunShot(bossX + 45.0, bossY + 100.0, i * 40.0);
         }
     }
