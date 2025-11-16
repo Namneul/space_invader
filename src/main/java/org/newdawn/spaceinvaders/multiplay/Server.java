@@ -165,7 +165,7 @@ public class Server implements Runnable{
         if (joined.size() >= maxPlayers) {
             logger.info("[서버 로그] 참가자 수 충족! 게임 루프를 시작합니다."); // ▼▼▼ 로그 추가 ▼▼▼
             gameStarted = true;
-            serverGame.initializeFirstStage();
+//            serverGame.initializeFirstStage();
             new Thread(this::startGameloop).start();
         } else {
             logger.info("[서버 로그] 아직 참가자를 더 기다립니다."); // ▼▼▼ 로그 추가 ▼▼▼
