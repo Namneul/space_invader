@@ -5,28 +5,26 @@ import org.newdawn.spaceinvaders.multiplay.stage.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-
-import java.util.Random;
-
 import java.util.logging.*;
 
 public class ServerGame {
 
     private int alienCount;
-    private int currentStageIndex;  // 현재 스테이지 인덱스
-    private Stage currentStage;
+//    private int currentStageIndex;  // 현재 스테이지 인덱스
+//    private Stage currentStage;
     public enum GameMode{MAIN_MENU, SINGLEPLAY, MULTIPLAY}
     private boolean logicUpdateRequested = false;
     private boolean bossLogicUpdateRequested = false;
 
     private Server server;
-    private ArrayList<Stage> stages;
+//    private ArrayList<Stage> stages;
 //    private final Random random = new Random();
     private boolean bossClear = false;
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final EntityManager entityManager;
     private final EntityFactory entityFactory;
+    private final StageManager stageManager;
 
 
     public enum EntityType{
@@ -129,6 +127,8 @@ public class ServerGame {
         this.server = server;
         this.entityManager = new EntityManager();
         this.entityFactory = new EntityFactory(this, this.entityManager);
+        this.stageManager = new StageManager(this, entityManager, entityFactory);
+        this.stageManager.initializeFirstStage();
     }
 
     public java.util.Map<Integer, Entity> getEntities(){
@@ -143,19 +143,12 @@ public class ServerGame {
     public void tick(){
         entityManager.updateAll();
 
-        // 3. 필요시 운석을 스폰합니다.
-        spawnMeteorsIfNeeded();
+        stageManager.spawnMeteorsIfNeeded();
 
         // 4. 요청된 외계인 로직을 업데이트합니다.
         updateAlienLogic();
         // 5. 요청된 보스 로직을 업데이트합니다.
         updateBossLogic();
-    }
-
-    private void spawnMeteorsIfNeeded(){
-        if(currentStageIndex > 2 && Math.random()<0.003){
-            spawnMeteor();
-        }
     }
 
     private void updateAlienLogic() {
@@ -200,7 +193,7 @@ public class ServerGame {
                     removeEntity(entity.getId());
                 }
             }
-            notifyWin();
+            stageManager.progressToNextStage();
         }
 
         if(Math.random()<0.2){
@@ -236,56 +229,12 @@ public class ServerGame {
             }
         }
     }
-
-    public void notifyWin() {
-        // 현재 스테이지가 5스테이지(인덱스 4)의 첫 웨이브였다면, 보스를 생성합니다.
-        if (currentStageIndex == 4) {
-            // 보스가 아직 없다면 보스를 생성
-            boolean bossExists = false;
-            for (Entity e : entityManager.getEntities().values()) {
-                if (e instanceof ServerBossEntity) {
-                    bossExists = true;
-                    break;
-                }
-            }
-            if (!bossExists) {
-                logger.info("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
-                entityFactory.createBoss(350,50);
-                return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
-            }
+    public void handleGameWin() {
+        // 점수 저장 로직
+        for (PlayerData data : server.getPlayerDataMap().values()) {
+            server.getLoginHost().insertScore(data.getId(), data.getScore());
         }
-
-        currentStageIndex++; // 다음 스테이지로 인덱스를 증가시킵니다.
-
-        // 만약 마지막 스테이지까지 모두 클리어했다면
-        if (currentStageIndex >= stages.size()) {
-            logger.info("[서버 로그] 모든 스테이지 클리어! 게임에서 승리했습니다.");
-            // 점수 저장 로직
-            for (PlayerData data : server.getPlayerDataMap().values()) {
-                server.getLoginHost().insertScore(data.getId(), data.getScore());
-            }
-            this.bossClear = true; // 게임 승리 플래그를 설정합니다.
-        }
-        // 다음 스테이지가 남아있다면
-        else {
-           logger.log(Level.INFO,"[서버 로그] 다음 스테이지({0})를 시작합니다.", (currentStageIndex + 1));
-            currentStage = stages.get(currentStageIndex);
-            currentStage.initialize(this, entityManager, entityFactory); // 다음 스테이지의 적들을 생성합니다.
-        }
-    }
-
-//    public void itemDrop(Entity alien){
-//        ServerEvolveItemEntity item = new ServerEvolveItemEntity(this, alien.getX(), alien.getY());
-//        entityManager.addEntity(item);
-//    }
-
-    private void loadStages(){
-        stages = new ArrayList<>();
-        stages.add(new Stage1());
-        stages.add(new Stage2());
-        stages.add(new Stage3());
-        stages.add(new Stage4());
-        stages.add(new Stage5());
+        this.bossClear = true; // 게임 승리 플래그를 설정합니다.
     }
 
     public void setAlienCount(int alienCount){
@@ -344,21 +293,6 @@ public class ServerGame {
         }
         playerShip.setLastFireTime();
         entityFactory.createPlayerShot(playerShip);
-    }
-
-    public void initializeFirstStage(){
-        if (stages == null || stages.isEmpty()){
-            loadStages();
-        }
-
-        currentStageIndex = 0;
-        currentStage = stages.get(currentStageIndex);
-        currentStage.initialize(this, entityManager, entityFactory);
-        logger.info("ServerGame: "+currentStage.getStageName()+" initialized.");
-    }
-
-    public void spawnMeteor(){
-        entityFactory.createMeteor();
     }
 
     public void addEntity(Entity entity){
