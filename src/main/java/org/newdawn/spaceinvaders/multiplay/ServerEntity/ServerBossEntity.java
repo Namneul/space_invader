@@ -3,6 +3,7 @@ package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 import org.newdawn.spaceinvaders.multiplay.*;
 
 import java.awt.Rectangle;
+import org.newdawn.spaceinvaders.multiplay.GameRules;
 
 public class ServerBossEntity extends Entity {
 
@@ -18,6 +19,8 @@ public class ServerBossEntity extends Entity {
     private final Rectangle laserHitbox;
     private int frameNumber;
 
+    private GameRules rules;
+
     public ServerBossEntity(ServerGame game, int x, int y) {
         super(game, 120, 100, x, y); // 네 Entity 생성자 그대로 사용
         maxHP = 5000;
@@ -29,6 +32,7 @@ public class ServerBossEntity extends Entity {
         this.lastPatternTime = System.currentTimeMillis();
         chooseNextPattern();
         this.laserHitbox = new Rectangle();
+        this.rules = game.getGameRules();
     }
 
     private void chooseNextPattern() {
@@ -47,7 +51,7 @@ public class ServerBossEntity extends Entity {
             frameNumber = 1;
             if (System.currentTimeMillis() - laserPhaseStartTime > 2000) {
                 isCharging = false;
-                game.bossFiresLaser(this);
+                factory.createBossLaser(this);
 
                 laserPhaseStartTime = System.currentTimeMillis();
                 chooseNextPattern();
@@ -58,7 +62,7 @@ public class ServerBossEntity extends Entity {
         if (isFiringLaser) {
             if (System.currentTimeMillis() - laserPhaseStartTime > 4000) {
                 isFiringLaser = false;
-                game.bossFiresLaser(this);
+                factory.createBossLaser(this);
                 lastPatternTime = System.currentTimeMillis();
                 chooseNextPattern();
             }
@@ -87,21 +91,27 @@ public class ServerBossEntity extends Entity {
             game.removeEntity(this.getId());
         }
         game.removeEntity(otherEntity.getId());
-//        if (Math.random()<0.2){
-//            game.(this);
-//        }
+        if (Math.random()<0.2){
+            factory.createItemDrop(this.x, this.y);
+        }
     }
 
 
     private void executePattern() {
         switch (currentPattern) {
             case SUMMON_MINIONS:
-                // ▼▼▼ 여기가 핵심! ServerGame에 '요청'만 한다 ▼▼▼
-                game.bossSummonsMinions((int)this.x, (int)this.y);
+                if (rules != null) {
+                    rules.incrementAlienCount(1); // 보스 본체 카운트 (기존 로직 유지)
+                    for (int i = 0; i < 5; i++) {
+                        factory.createBossMinion(this.x - 100 + (i * 50), this.y + 50);
+                        rules.incrementAlienCount(1); // 하수인 카운트 증가
+                    }
+                }
                 break;
             case SHOTGUN_BLAST:
-                // ▼▼▼ 여기도 '요청'만 한다 ▼▼▼
-                game.bossFiresShotgun((int)this.x, (int)this.y);
+                for (int i = -2; i <= 2; i++) {
+                    factory.createBossShotgunShot(this.x + 45.0, this.y + 100.0, i * 40.0);
+                }
                 break;
             case LASER_BEAM:
                 laserBeam(); // 이건 상태 변경이라 보스가 직접 처리

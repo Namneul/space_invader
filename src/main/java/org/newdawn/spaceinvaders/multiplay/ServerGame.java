@@ -37,6 +37,10 @@ public class ServerGame {
         return entityFactory;
     }
 
+    public GameRules getGameRules(){
+        return gameRules;
+    }
+
     public Login getLoginHost() {
         return server.getLoginHost();
     }
@@ -133,27 +137,6 @@ public class ServerGame {
 
     public void notifyBossKilled(int killerId) {
         gameRules.notifyBossKilled(killerId);
-    }
-
-    public void bossSummonsMinions(int bossX, int bossY) {
-        logger.info("보스 패턴: 하수인 소환!");
-        gameRules.incrementAlienCount(1);
-        for (int i = 0; i < 5; i++) {
-            entityFactory.createBossMinion(bossX - 100 + (i * 50), bossY + 50);
-            gameRules.incrementAlienCount(1);
-        }
-    }
-
-    public void bossFiresShotgun(int bossX, int bossY) {
-        logger.info("보스 패턴: 샷건 발사!");
-        for (int i = -2; i <= 2; i++) {
-
-            entityFactory.createBossShotgunShot(bossX + 45.0, bossY + 100.0, i * 40.0);
-        }
-    }
-
-    public void bossFiresLaser(ServerBossEntity boss) {
-        entityFactory.createBossLaser(boss);
     }
 
     public int getNextAvailableId(){
