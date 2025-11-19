@@ -3,7 +3,6 @@ package org.newdawn.spaceinvaders.multiplay;
 import org.newdawn.spaceinvaders.multiplay.ServerEntity.ServerAlienEntity;
 import org.newdawn.spaceinvaders.multiplay.ServerEntity.ServerPlayerShipEntity;
 import org.newdawn.spaceinvaders.multiplay.ServerEntity.ServerReflectAlienEntity;
-import org.newdawn.spaceinvaders.multiplay.ServerGame.Entity;
 import java.util.logging.Logger;
 
 public class GameRules {

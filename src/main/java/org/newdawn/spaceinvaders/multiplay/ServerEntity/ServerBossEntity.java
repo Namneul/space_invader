@@ -1,11 +1,10 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
-import org.newdawn.spaceinvaders.multiplay.PlayerData;
-import org.newdawn.spaceinvaders.multiplay.Server;
-import org.newdawn.spaceinvaders.multiplay.ServerGame;
+import org.newdawn.spaceinvaders.multiplay.*;
+
 import java.awt.Rectangle;
 
-public class ServerBossEntity extends ServerGame.Entity {
+public class ServerBossEntity extends Entity {
 
 
     private enum Pattern { SUMMON_MINIONS, SHOTGUN_BLAST, LASER_BEAM }
@@ -25,7 +24,7 @@ public class ServerBossEntity extends ServerGame.Entity {
         currentHP = maxHP;
         this.moveSpeed = 50;
         this.dx = moveSpeed;
-        this.type = ServerGame.EntityType.BOSS;
+        this.type = EntityType.BOSS;
 
         this.lastPatternTime = System.currentTimeMillis();
         chooseNextPattern();
@@ -81,7 +80,7 @@ public class ServerBossEntity extends ServerGame.Entity {
         dx = -dx;
     }
 
-    public void hit(ServerGame.Entity otherEntity,int dmg){
+    public void hit(Entity otherEntity,int dmg){
         this.currentHP -= dmg;
         if (currentHP <= 0){
             game.notifyBossKilled(((ServerShotEntity) otherEntity).getOwnerId());
@@ -119,7 +118,7 @@ public class ServerBossEntity extends ServerGame.Entity {
     }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity) {
             hit(otherEntity,((ServerShotEntity)otherEntity).getDamage());
         } else if (otherEntity instanceof ServerPlayerShipEntity) {

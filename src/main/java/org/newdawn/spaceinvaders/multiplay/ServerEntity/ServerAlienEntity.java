@@ -1,9 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.Server;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerAlienEntity extends ServerGame.Entity {
+public class ServerAlienEntity extends Entity {
 
     private long lastFrameChange;
     private long frameDuration = 250;
@@ -14,7 +16,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
         super(serverGame,43,29,x, y);
         moveSpeed = 75;
         dx = -moveSpeed;
-        this.type = ServerGame.EntityType.ALIEN;
+        this.type = EntityType.ALIEN;
         maxHP = 200;
         currentHP = maxHP;
     }
@@ -52,7 +54,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
         this.attacking = attacking;
     }
 
-    public void hit(ServerGame.Entity otherEntity,int dmg){
+    public void hit(Entity otherEntity,int dmg){
         this.currentHP -= dmg;
         if (currentHP <= 0){
             game.notifyAlienKilled(this, ((ServerShotEntity) otherEntity).getOwnerId());
@@ -78,7 +80,7 @@ public class ServerAlienEntity extends ServerGame.Entity {
 
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity) {
            hit(otherEntity, ((ServerShotEntity) otherEntity).getDamage());
         }

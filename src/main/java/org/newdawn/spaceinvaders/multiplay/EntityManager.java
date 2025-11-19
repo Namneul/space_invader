@@ -3,7 +3,6 @@ package org.newdawn.spaceinvaders.multiplay;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
-import org.newdawn.spaceinvaders.multiplay.ServerGame.Entity;
 
 public class EntityManager {
 

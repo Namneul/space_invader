@@ -1,9 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerPlayerShipEntity extends ServerGame.Entity {
+public class ServerPlayerShipEntity extends Entity {
 
     private long lastFireTime = 0;
     public int upgradeCount = 0;
@@ -13,7 +15,7 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
 
     public ServerPlayerShipEntity(ServerGame serverGame, double x, double y) {
         super(serverGame,30,30, x, y);
-        this.type = ServerGame.EntityType.PLAYER;
+        this.type = EntityType.PLAYER;
         moveSpeed = 250;
         dx = moveSpeed;
     }
@@ -78,7 +80,7 @@ public class ServerPlayerShipEntity extends ServerGame.Entity {
     }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerAlienShotEntity || otherEntity instanceof ServerAlienEntity || otherEntity instanceof  ServerReflectAlienEntity){
             game.notifyDeath(this.getId());
             resetUpgrade();

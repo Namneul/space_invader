@@ -7,119 +7,17 @@ import java.util.logging.*;
 
 public class ServerGame {
 
-//    private int alienCount;
-//    private int currentStageIndex;  // 현재 스테이지 인덱스
-//    private Stage currentStage;
     private boolean logicUpdateRequested = false;
     private boolean bossLogicUpdateRequested = false;
 
     private Server server;
-//    private ArrayList<Stage> stages;
-//    private final Random random = new Random();
-//    private boolean bossClear = false;
+
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final EntityManager entityManager;
     private final EntityFactory entityFactory;
     private final StageManager stageManager;
     private final GameRules gameRules;
-
-
-    public enum EntityType{
-        PLAYER,
-        ALIEN,
-        REFLECT_ALIEN,
-        SHOT,
-        ALIEN_SHOT,
-        ITEM,
-        METEOR,
-        BOSS,
-        LASER
-    }
-
-
-    public abstract  static class Entity implements Serializable {
-        protected transient ServerGame game;
-        private int id;
-        protected double x;
-        protected double y;
-        private double width;
-        private double height;
-        protected double dx;
-        protected double dy;
-        protected EntityType type;
-        protected double moveSpeed;
-        protected int currentHP;
-        protected int maxHP;
-
-
-
-        protected Entity(final ServerGame game,double width, double height, double x, double y) {
-            this.game = game;
-            this.id = this.game.getNextAvailableId();
-            this.width = width;
-            this.height = height;
-            this.x = x;
-            this.y = y;
-        }
-
-        public void setHorizontalMovement(double dx){
-            this.dx = dx;
-        }
-
-        public int getCurrentHP(){return currentHP; }
-        public int getMaxHP(){return maxHP; }
-
-        public final int getId() {
-            return id;
-        }
-
-        public double getX() {
-            return x;
-        }
-
-        public double getY() {
-            return y;
-        }
-
-        public double getWidth(){ return this.width; }
-
-        public double getHeight(){ return this.height; }
-
-        public void setX(final double x) {
-            this.x = x;
-        }
-
-        public void setY(final double y) {
-            this.y = y;
-        }
-
-        public void setMoveSpeed(double moveSpeed){
-            this.moveSpeed = moveSpeed;
-        }
-
-        public double getMoveSpeed(){ return moveSpeed; }
-
-        public void tick(){
-            this.x += this.dx / Server.TICKS_PER_SECOND;
-            this.y += this.dy / Server.TICKS_PER_SECOND;
-        }
-
-        public EntityType getType(){
-            return this.type;
-        }
-
-        public abstract void handleCollision(Entity otherEntity);
-
-        public boolean isColliding(Entity otherEntity) {
-
-            return getX() < otherEntity.getX() + otherEntity.getWidth() && getX() + getWidth() > otherEntity.getX()
-                    && getY() < otherEntity.getY() + otherEntity.getHeight()
-                    && getY() + getHeight() > otherEntity.getY()
-                    && this != otherEntity;
-        }
-    }
-
 
     public ServerGame(Server server){
         this.server = server;
@@ -133,6 +31,10 @@ public class ServerGame {
 
     public java.util.Map<Integer, Entity> getEntities(){
         return entityManager.getEntities();
+    }
+
+    public EntityFactory getEntityFactory(){
+        return entityFactory;
     }
 
     public Login getLoginHost() {
@@ -195,6 +97,7 @@ public class ServerGame {
    public void notifyDeath(int deadPlayerId) {
         gameRules.notifyDeath(deadPlayerId);
     }
+
     public void handleGameWin() {
         // 점수 저장 로직
         gameRules.handleGameWin();

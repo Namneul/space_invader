@@ -117,8 +117,8 @@ public class Server implements Runnable{
                 clientHandler.sendUpdate("VICTORY");
             }
         }
-        java.util.Map<Integer, ServerGame.Entity> originEntities = serverGame.getEntities();
-        TreeMap<Integer, ServerGame.Entity> entitiesCopy;
+        java.util.Map<Integer, Entity> originEntities = serverGame.getEntities();
+        TreeMap<Integer, Entity> entitiesCopy;
 
         synchronized (originEntities) {
             entitiesCopy = new TreeMap<>(originEntities);
