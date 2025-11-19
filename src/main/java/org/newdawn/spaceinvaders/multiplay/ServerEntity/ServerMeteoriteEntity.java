@@ -1,9 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.Server;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerMeteoriteEntity extends ServerGame.Entity {
+public class ServerMeteoriteEntity extends Entity {
 
     private long frameDuration = 50;
     private long lastFrameChange;
@@ -15,7 +17,7 @@ public class ServerMeteoriteEntity extends ServerGame.Entity {
         super(game, 64, 64, x, y);
         moveSpeed = 300;
         dy = moveSpeed;
-        this.type = ServerGame.EntityType.METEOR;
+        this.type = EntityType.METEOR;
     }
 
     @Override
@@ -39,7 +41,7 @@ public class ServerMeteoriteEntity extends ServerGame.Entity {
     public int getFrameNumber(){ return frameNumber; }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerPlayerShipEntity){
             game.removeEntity(this.getId());
         } else if (otherEntity instanceof ServerShotEntity) {

@@ -7,19 +7,19 @@ public class GameState implements Serializable {
 
     public enum GameStatus {PLAYING, GAME_OVER, STAGE_CLEAR}
 
-    private Map<Integer, ServerGame.Entity> entities;
+    private Map<Integer, Entity> entities;
     private final int currentScore;
     private final int remainingLives;
     private final GameStatus status;
 
-    public GameState(Map<Integer, ServerGame.Entity> entities, int score, int lives, GameStatus status){
+    public GameState(Map<Integer, Entity> entities, int score, int lives, GameStatus status){
         this.entities = entities;
         this.currentScore = score;
         this.remainingLives = lives;
         this.status = status;
     }
 
-    public Map<Integer, ServerGame.Entity> getEntities(){
+    public Map<Integer, Entity> getEntities(){
         return entities;
     }
     public int getCurrentScore(){

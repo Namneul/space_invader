@@ -1,14 +1,16 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.Server;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerReflectAlienEntity extends ServerGame.Entity {
+public class ServerReflectAlienEntity extends Entity {
     public ServerReflectAlienEntity(ServerGame game, double x, double y) {
         super(game, 20, 20, x, y);
         moveSpeed = 75;
         dx = -moveSpeed;
-        this.type = ServerGame.EntityType.REFLECT_ALIEN;
+        this.type = EntityType.REFLECT_ALIEN;
     }
 
     @Override
@@ -34,7 +36,7 @@ public class ServerReflectAlienEntity extends ServerGame.Entity {
     }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerShotEntity){
             game.removeEntity(otherEntity.getId());
             game.notifyDeath(this.getId());

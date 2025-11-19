@@ -1,9 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.Server;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerEvolveItemEntity extends ServerGame.Entity {
+public class ServerEvolveItemEntity extends Entity {
 
 
 
@@ -11,7 +13,7 @@ public class ServerEvolveItemEntity extends ServerGame.Entity {
         super(game, 29, 26, x, y);
         moveSpeed = 200;
         dy = moveSpeed;
-        this.type = ServerGame.EntityType.ITEM;
+        this.type = EntityType.ITEM;
     }
 
     @Override
@@ -24,7 +26,7 @@ public class ServerEvolveItemEntity extends ServerGame.Entity {
     }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
         if (otherEntity instanceof ServerPlayerShipEntity){
             game.removeEntity(this.getId());
         }

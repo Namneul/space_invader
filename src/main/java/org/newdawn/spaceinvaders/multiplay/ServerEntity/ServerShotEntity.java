@@ -1,9 +1,11 @@
 package org.newdawn.spaceinvaders.multiplay.ServerEntity;
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
+import org.newdawn.spaceinvaders.multiplay.EntityType;
 import org.newdawn.spaceinvaders.multiplay.Server;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
-public class ServerShotEntity extends ServerGame.Entity {
+public class ServerShotEntity extends Entity {
 
 
     private final int ownerId;
@@ -12,7 +14,7 @@ public class ServerShotEntity extends ServerGame.Entity {
 
     public ServerShotEntity(ServerGame serverGame, double x, double y, int ownerId, int upgradeLevel) {
         super(serverGame,10,10, x, y);
-        this.type = ServerGame.EntityType.SHOT;
+        this.type = EntityType.SHOT;
         this.ownerId = ownerId;
         this.upgradeLevel = upgradeLevel;
         moveSpeed = 300;
@@ -34,6 +36,6 @@ public class ServerShotEntity extends ServerGame.Entity {
     }
 
     @Override
-    public void handleCollision(ServerGame.Entity otherEntity) {
+    public void handleCollision(Entity otherEntity) {
     }
 }

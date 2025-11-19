@@ -1,13 +1,14 @@
 package org.newdawn.spaceinvaders;
 
 
+import org.newdawn.spaceinvaders.multiplay.Entity;
 import org.newdawn.spaceinvaders.multiplay.GameState;
 import org.newdawn.spaceinvaders.multiplay.ServerEntity.*;
 import org.newdawn.spaceinvaders.multiplay.ServerGame;
 
 import java.awt.*;
 import java.awt.image.BufferStrategy;
-import java.util.TreeMap;
+
 
 public class GameRenderer {
 
@@ -105,12 +106,12 @@ public class GameRenderer {
     }
 
     private void drawEntities(Graphics2D g) {
-        java.util.Map<Integer, ServerGame.Entity> entitiesToDraw = currentGameState.getEntities();
+        java.util.Map<Integer, Entity> entitiesToDraw = currentGameState.getEntities();
         if (entitiesToDraw == null) {
             return;
         }
 
-        for (ServerGame.Entity entity : entitiesToDraw.values()) {
+        for (Entity entity : entitiesToDraw.values()) {
             drawEntity(g, entity);
         }
     }
@@ -126,7 +127,7 @@ public class GameRenderer {
         }
     }
 
-    private void drawEntity(Graphics2D g, ServerGame.Entity entity) {
+    private void drawEntity(Graphics2D g, Entity entity) {
         Sprite spriteToDraw = null;
 
         switch (entity.getType()) {
@@ -168,7 +169,7 @@ public class GameRenderer {
             spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
         }
     }
-    private void drawAlien(Graphics2D g, ServerGame.Entity entity) {
+    private void drawAlien(Graphics2D g, Entity entity) {
         int frame = ((ServerAlienEntity) entity).getFrameNumber();
         Sprite spriteToDraw = this.alienFrames[frame];
         spriteToDraw.draw(g, (int) entity.getX(), (int) entity.getY());
@@ -189,7 +190,7 @@ public class GameRenderer {
         g.fillRect(barx, bary, (int) (barWidth * healthPercent), barHeight);
     }
 
-    private void drawBoss(Graphics2D g, ServerGame.Entity entity) {
+    private void drawBoss(Graphics2D g, Entity entity) {
         int bossFrame = ((ServerBossEntity) entity).getFrameNumber();
         Sprite baseSprite = this.bossSprite;
         Sprite effectSprite = (bossFrame == 1) ? this.bossChargingSprite : null;

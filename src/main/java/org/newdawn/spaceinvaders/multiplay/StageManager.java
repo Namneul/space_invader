@@ -53,7 +53,7 @@ public class StageManager {
         if (currentStageIndex == 4) {
             // 보스가 아직 없다면 보스를 생성
             boolean bossExists = false;
-            for (ServerGame.Entity e : manager.getEntities().values()) {
+            for (Entity e : manager.getEntities().values()) {
                 if (e instanceof ServerBossEntity) {
                     bossExists = true;
                     break;
