@@ -19,7 +19,7 @@ public class ServerBossEntity extends Entity {
     private final Rectangle laserHitbox;
     private int frameNumber;
 
-    private GameRules rules;
+
 
     public ServerBossEntity(ServerGame game, int x, int y) {
         super(game, 120, 100, x, y); // 네 Entity 생성자 그대로 사용
@@ -32,7 +32,6 @@ public class ServerBossEntity extends Entity {
         this.lastPatternTime = System.currentTimeMillis();
         chooseNextPattern();
         this.laserHitbox = new Rectangle();
-        this.rules = game.getGameRules();
     }
 
     private void chooseNextPattern() {
@@ -98,6 +97,8 @@ public class ServerBossEntity extends Entity {
 
 
     private void executePattern() {
+        GameRules rules = game.getGameRules();
+
         switch (currentPattern) {
             case SUMMON_MINIONS:
                 if (rules != null) {
