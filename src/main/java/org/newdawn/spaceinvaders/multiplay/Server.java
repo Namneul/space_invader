@@ -176,6 +176,10 @@ public class Server implements Runnable{
         clientHandlers.remove(ch);   // 접속 목록에서 제거
         joined.remove(ch);           // 참가 집합에서도 제거
         logger.info("Client removed. Now: " + clientHandlers.size());
+
+        if(clientHandlers.isEmpty()) {
+            logger.info("모든 플레이어가 퇴장했씁니다 서버를 종료합니다");
+        }
     }
 
     public Map<Integer, PlayerData> getPlayerDataMap(){ return playerDataMap; }

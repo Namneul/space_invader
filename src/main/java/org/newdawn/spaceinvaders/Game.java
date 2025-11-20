@@ -32,6 +32,8 @@ public class Game extends Canvas implements NetworkListener{
 
     private transient NetworkClient networkClient;
 
+    private boolean wasPPressed = false;
+
     // 게임 상태 변수
     private volatile boolean isGameLoopRunning = false;
     private volatile boolean isConnecting = false;
@@ -62,7 +64,7 @@ public class Game extends Canvas implements NetworkListener{
         container.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (singlePlayServerProcess != null) singlePlayServerProcess.destroy();
+                if (singlePlayServerProcess != null) singlePlayServerProcess.destroyForcibly();
                 System.exit(0);
             }
         });
@@ -148,6 +150,11 @@ public class Game extends Canvas implements NetworkListener{
         if (!inputManager.isLeftPressed() && !inputManager.isRightPressed()){
             networkClient.sendToServer(new PlayerInput(PlayerInput.Action.STOP));
         }
+        boolean isPPressed = inputManager.isPPressed();
+        if (isPPressed && !wasPPressed) {
+            networkClient.sendToServer(new PlayerInput(PlayerInput.Action.SKIP_STAGE));
+        }
+        wasPPressed = isPPressed;
     }
 
 
@@ -334,7 +341,7 @@ public class Game extends Canvas implements NetworkListener{
         networkClient.disconnectIfConnected();
 
         if (this.singlePlayServerProcess != null) {
-            this.singlePlayServerProcess.destroy(); // 실행 중인 싱글플레이 서버 종료
+            this.singlePlayServerProcess.destroyForcibly(); // 실행 중인 싱글플레이 서버 종료
             this.singlePlayServerProcess = null;
         }
 

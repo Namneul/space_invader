@@ -49,6 +49,8 @@ public class StageManager {
 
     //현재 스테이지 클리어 후 다음 스테이지로 진행
     public void progressToNextStage() {
+        clearStageEntities();
+
         // 현재 스테이지가 5스테이지(인덱스 4)의 첫 웨이브였다면, 보스를 생성합니다.
         if (currentStageIndex == 4) {
             // 보스가 아직 없다면 보스를 생성
@@ -62,6 +64,9 @@ public class StageManager {
             if (!bossExists) {
                 logger.info("[서버 로그] 5스테이지 첫 웨이브 클리어. 보스를 생성합니다.");
                 factory.createBoss(350, 50);
+
+                game.setAlienCount(1);
+
                 return; // 다음 스테이지로 넘어가지 않고 보스전을 시작합니다.
             }
         }
@@ -79,6 +84,15 @@ public class StageManager {
             logger.log(Level.INFO,"[서버 로그] 다음 스테이지({0})를 시작합니다.", (currentStageIndex + 1));
             currentStage = stages.get(currentStageIndex);
             currentStage.initialize(game, manager, factory); // 다음 스테이지의 적들을 생성합니다.
+        }
+    }
+
+    private void clearStageEntities() {
+        for (Entity entity : manager.getEntities().values()) {
+
+            if (entity.getType() != EntityType.PLAYER) {
+                manager.removeEntity(entity.getId());
+            }
         }
     }
 

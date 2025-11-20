@@ -7,7 +7,8 @@ public class PlayerInput implements Serializable {
         MOVE_LEFT,
         MOVE_RIGHT,
         FIRE,
-        STOP
+        STOP,
+        SKIP_STAGE
     }
 
     private Action action;

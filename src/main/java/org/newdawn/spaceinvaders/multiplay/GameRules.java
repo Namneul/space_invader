@@ -62,6 +62,9 @@ public class GameRules {
             case STOP:
                 playerShip.setHorizontalMovement(0);
                 break;
+            case SKIP_STAGE:
+                stageManager.progressToNextStage();
+                break;
         }
     }
 

@@ -9,6 +9,7 @@ public class InputManager extends KeyAdapter{
     private boolean rightPressed = false;
     private boolean firePressed = false;
     private boolean waitingForKeyPress = true;
+    private boolean pPressed = false;
 
     @Override
     public void keyPressed(KeyEvent e) {
@@ -24,6 +25,9 @@ public class InputManager extends KeyAdapter{
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             firePressed = true;
         }
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            pPressed = true;
+        }
     }
 
     @Override
@@ -36,6 +40,9 @@ public class InputManager extends KeyAdapter{
         }
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
             firePressed = false;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            pPressed = false;
         }
     }
 
@@ -63,6 +70,8 @@ public class InputManager extends KeyAdapter{
         return firePressed;
     }
 
+    public boolean isPPressed() { return pPressed; }
+
     public boolean isWaitingForKeyPress() {
         return waitingForKeyPress;
     }
@@ -76,5 +85,6 @@ public class InputManager extends KeyAdapter{
         leftPressed = false;
         rightPressed = false;
         firePressed = false;
+        pPressed = false;
     }
 }
