@@ -29,8 +29,8 @@ public class Game extends Canvas implements NetworkListener{
     private transient GameRenderer gameRenderer;
     private transient BufferStrategy strategy;
     private static final String WINDOW_TITLE = "Space Invaders";
-
     private transient NetworkClient networkClient;
+    private transient LocalServerManager localServerManager;
 
     private boolean wasPPressed = false;
 
@@ -54,6 +54,7 @@ public class Game extends Canvas implements NetworkListener{
 
         this.gameRenderer = new GameRenderer();
         this.networkClient = new NetworkClient(this);
+        this.localServerManager = new LocalServerManager();
 
         this.setBounds(0, 0, 800, 600);
         gamePanel.add(this);
@@ -64,7 +65,9 @@ public class Game extends Canvas implements NetworkListener{
         container.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (singlePlayServerProcess != null) singlePlayServerProcess.destroyForcibly();
+                if (localServerManager != null){
+                    localServerManager.cleanupServerProcess(singlePlayServerProcess);
+                }
                 System.exit(0);
             }
         });
@@ -186,21 +189,7 @@ public class Game extends Canvas implements NetworkListener{
 
         new Thread(() -> {
             try {
-                String classpath = System.getProperty("java.class.path");
-                ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", String.valueOf(SINGLE_PLAYER_PORT), "single");
-                pb.redirectErrorStream(true);
-                pb.directory(new File("."));
-                this.singlePlayServerProcess = pb.start();
-                logger.info("--- 로컬 서버 프로세스 시작됨 ---");
-
-                try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(singlePlayServerProcess.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        logger.log(Level.INFO,"[Local Server]: {0}",line);
-                    }
-                }
-                logger.info("--- 로컬 서버 프로세스 종료됨 ---");
-
+                this.singlePlayServerProcess = localServerManager.startServerProcess(SINGLE_PLAYER_PORT, "single", "[Local Server]");
             } catch (IOException ex) {
                 SwingUtilities.invokeLater(() -> {
                     JOptionPane.showMessageDialog(container, "로컬 서버 실행 실패: " + ex.getMessage());
@@ -227,13 +216,12 @@ public class Game extends Canvas implements NetworkListener{
         String tempPort = String.valueOf(RANK_SERVER_PORT);
 
         try {
-            // 1. 랭킹 서버 프로세스를 시작하고, 부팅될 때까지 대기합니다.
-            serverProcess = startRankServerProcess(tempPort);
+            serverProcess = localServerManager.startServerProcess(
+                    RANK_SERVER_PORT,null,"[Rank Server]"
+            );
+            Thread.sleep(1000);
 
-            // 2. 서버에 랭킹을 요청하고 응답을 받습니다.
-            Object response = networkClient.sendRequestWithTempConnection(DEFAULT_HOST, RANK_SERVER_PORT, new RankRequest());
-
-            // 3. 응답을 처리하여 UI에 랭킹 보드를 띄웁니다.
+            Object response = networkClient.sendRequestWithTempConnection(DEFAULT_HOST,RANK_SERVER_PORT,new RankRequest());
             handleRankResponse(response);
 
         } catch (IOException | ClassNotFoundException ex) {
@@ -243,38 +231,8 @@ public class Game extends Canvas implements NetworkListener{
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(container, "랭킹 확인 작업이 중단되었습니다."));
             Thread.currentThread().interrupt();
         } finally {
-            // 4. 모든 작업이 끝나면 서버 프로세스를 확실히 종료시킵니다.
-            cleanupServerProcess(serverProcess);
+            localServerManager.cleanupServerProcess(serverProcess);
         }
-    }
-
-    private Process startRankServerProcess(String tempPort) throws IOException, InterruptedException {
-        String classpath = System.getProperty("java.class.path");
-        ProcessBuilder pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath, "org.newdawn.spaceinvaders.multiplay.Server", tempPort);
-        pb.redirectErrorStream(true); // 에러 로그도 같이 볼 수 있게 설정
-        Process serverProcess = pb.start();
-        logger.log(Level.INFO,"임시 랭킹 서버를 시작합니다 (포트: {0})",tempPort);
-
-        // 서버 프로세스의 로그를 읽는 별도 스레드를 시작
-        startProcessLogReader(serverProcess);
-
-        // 서버가 부팅될 때까지 1초 대기
-        Thread.sleep(1000);
-        return serverProcess;
-    }
-
-    private void startProcessLogReader(Process process) {
-        new Thread(() -> {
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    logger.log(Level.INFO,"[Rank Server]: {0}",line);
-                }
-            } catch (IOException ioException) {
-                // 서버 프로세스가 강제 종료되면(finally) 이 예외는 정상입니다.
-                // 의도적으로 무시합니다.
-            }
-        }, "rank-server-log-reader").start();
     }
 
     private void handleRankResponse(Object response) {
@@ -286,13 +244,6 @@ public class Game extends Canvas implements NetworkListener{
                     JOptionPane.showMessageDialog(container, "랭킹 보드를 표시할 수 없습니다.");
                 }
             });
-        }
-    }
-
-    private void cleanupServerProcess(Process serverProcess) {
-        if (serverProcess != null && serverProcess.isAlive()) {
-            logger.info("임시 랭킹 서버를 종료합니다.");
-            serverProcess.destroyForcibly();
         }
     }
 
@@ -340,10 +291,9 @@ public class Game extends Canvas implements NetworkListener{
         currentGameState = null;
         networkClient.disconnectIfConnected();
 
-        if (this.singlePlayServerProcess != null) {
-            this.singlePlayServerProcess.destroyForcibly(); // 실행 중인 싱글플레이 서버 종료
-            this.singlePlayServerProcess = null;
-        }
+        localServerManager.cleanupServerProcess(this.singlePlayServerProcess);
+        this.singlePlayServerProcess = null;
+
 
         MainMenuPanel menuPanel = new MainMenuPanel(
                 e -> onSinglePlayClicked(),
