@@ -1,7 +1,7 @@
 package org.newdawn.spaceinvaders.client.multiplay.ServerEntity;
 
 import org.newdawn.spaceinvaders.client.multiplay.ServerGame;
-import org.newdawn.spaceinvaders.multiplay.*;
+
 
 import java.awt.Rectangle;
 import org.newdawn.spaceinvaders.client.multiplay.GameRules;

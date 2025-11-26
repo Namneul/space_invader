@@ -1,7 +1,6 @@
 package org.newdawn.spaceinvaders.client.multiplay;
 
 import org.newdawn.spaceinvaders.client.multiplay.ServerEntity.*;
-import org.newdawn.spaceinvaders.multiplay.ServerEntity.*;
 
 import java.util.Map;
 import java.util.logging.*;

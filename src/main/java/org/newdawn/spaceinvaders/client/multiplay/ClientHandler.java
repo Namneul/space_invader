@@ -1,7 +1,7 @@
 package org.newdawn.spaceinvaders.client.multiplay;
 
 import org.newdawn.spaceinvaders.client.multiplay.communication.*;
-import org.newdawn.spaceinvaders.multiplay.communication.*;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.logging.Level;

@@ -4,7 +4,6 @@ import org.newdawn.spaceinvaders.client.multiplay.ServerEntity.Entity;
 import org.newdawn.spaceinvaders.client.multiplay.ServerEntity.EntityType;
 import org.newdawn.spaceinvaders.client.multiplay.ServerEntity.ServerBossEntity;
 import org.newdawn.spaceinvaders.client.multiplay.stage.*;
-import org.newdawn.spaceinvaders.multiplay.stage.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
