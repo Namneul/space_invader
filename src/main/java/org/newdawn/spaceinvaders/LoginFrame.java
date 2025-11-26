@@ -14,7 +14,6 @@ import java.awt.Font;
 
 public class LoginFrame {
     JFrame frame;
-    User user;
     private final Game game;
     private static final Font INPUT_FONT = new Font("SansSerif", Font.BOLD, 15);
     JPanel signinPanel = new JPanel();
@@ -24,7 +23,6 @@ public class LoginFrame {
     JButton signupButton;
     JTextField userId;
     JPasswordField password;
-    boolean loginStatus = false;
     public LoginFrame(Game game){
         this.game = game;
     }
