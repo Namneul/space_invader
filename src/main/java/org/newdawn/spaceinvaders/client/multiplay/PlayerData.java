@@ -1,3 +1,5 @@
+package org.newdawn.spaceinvaders.multiplay;
+
 package org.newdawn.spaceinvaders.client.multiplay;
 
 public class PlayerData {
@@ -12,10 +14,6 @@ public class PlayerData {
     }
 
     public String  getId(){ return id;}
-
-    public String getPassword(){ return password; }
-
-    public void setPassword(String pw){ this.password = pw; }
 
     public void setName(String name){this.id = name;}
 

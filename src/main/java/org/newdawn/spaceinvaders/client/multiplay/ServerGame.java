@@ -130,11 +130,6 @@ public class ServerGame {
         gameRules.processPlayerInput(playerShipId, receivedInput);
     }
 
-//    public void addEntity(Entity entity){
-//        entityManager.addEntity(entity);
-//    }
-
-
     public void notifyBossKilled(int killerId) {
         gameRules.notifyBossKilled(killerId);
     }

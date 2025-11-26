@@ -1,6 +1,5 @@
 package org.newdawn.spaceinvaders.client;
 
-import org.newdawn.spaceinvaders.client.multiplay.Login;
 import org.newdawn.spaceinvaders.client.multiplay.communication.LoginRequest;
 import org.newdawn.spaceinvaders.client.multiplay.communication.SignUpRequest;
 
@@ -14,7 +13,6 @@ import java.awt.Font;
 
 public class LoginFrame {
     JFrame frame;
-    User user;
     private final Game game;
     private static final Font INPUT_FONT = new Font("SansSerif", Font.BOLD, 15);
     JPanel signinPanel = new JPanel();
@@ -24,15 +22,10 @@ public class LoginFrame {
     JButton signupButton;
     JTextField userId;
     JPasswordField password;
-    boolean loginStatus = false;
     public LoginFrame(Game game){
         this.game = game;
     }
-    private Login login = new Login();
 
-    public Login getLogin() {
-        return this.login;
-    }
     public void startlogin() {
         loginBackground = SpriteStore.get().getSprite("loginBackground.png");
         ImageIcon signInIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signInBtn.png"));
