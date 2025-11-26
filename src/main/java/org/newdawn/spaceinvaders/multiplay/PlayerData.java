@@ -1,7 +1,5 @@
 package org.newdawn.spaceinvaders.multiplay;
 
-import org.newdawn.spaceinvaders.LoginFrame;
-
 public class PlayerData {
     public String id;
     public String password;
@@ -14,10 +12,6 @@ public class PlayerData {
     }
 
     public String  getId(){ return id;}
-
-    public String getPassword(){ return password; }
-
-    public void setPassword(String pw){ this.password = pw; }
 
     public void setName(String name){this.id = name;}
 
