@@ -1,0 +1,212 @@
+package org.newdawn.spaceinvaders.client;
+
+import org.newdawn.spaceinvaders.client.multiplay.communication.LoginRequest;
+import org.newdawn.spaceinvaders.client.multiplay.communication.SignUpRequest;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.SwingConstants;
+import java.awt.Font;
+
+public class LoginFrame {
+    JFrame frame;
+    private final Game game;
+    private static final Font INPUT_FONT = new Font("SansSerif", Font.BOLD, 15);
+    JPanel signinPanel = new JPanel();
+    JPanel signupPanel = new JPanel();
+    private Sprite loginBackground;
+    JButton loginButton;
+    JButton signupButton;
+    JTextField userId;
+    JPasswordField password;
+    public LoginFrame(Game game){
+        this.game = game;
+    }
+
+    public void startlogin() {
+        loginBackground = SpriteStore.get().getSprite("loginBackground.png");
+        ImageIcon signInIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signInBtn.png"));
+        ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
+        ImageIcon signInIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signInBtn_hover.png"));
+        ImageIcon signUpIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+
+        frame = new JFrame("로그인");
+        this.signinPanel = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                loginBackground.draw(g,0,0);
+            }
+        };
+        signinPanel.setPreferredSize(new Dimension(800,600));
+        signinPanel.setLayout(null);
+
+        signupButton = new JButton(signUpIcon);
+        signupButton.setBounds(300,444,200,50);
+        signupButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        signupButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        signupButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        signupButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                signupButton.setIcon(signUpIconHover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                signupButton.setIcon(signUpIcon);
+            }
+        });
+
+        loginButton = new JButton(signInIcon);
+        loginButton.setBounds(300,377,200,50);
+        loginButton.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        loginButton.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        loginButton.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        loginButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                loginButton.setIcon(signInIconHover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                loginButton.setIcon(signInIcon);
+            }
+        });
+
+        userId = new JTextField(10);
+        userId.setBounds(300,222,200,50);
+        userId.setOpaque(false); // 1. 배경을 투명하게 설정
+        userId.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
+        userId.setForeground(Color.BLACK); // 3. 글자 색 변경
+        userId.setFont(INPUT_FONT); // 4. 폰트 설정
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
+
+        password = new JPasswordField(10);
+        password.setBounds(300,302,200,50);
+        password.setOpaque(false); // 1. 배경을 투명하게 설정
+        password.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
+        password.setForeground(Color.BLACK); // 3. 글자 색 변경
+        password.setFont(INPUT_FONT); // 4. 폰트 설정
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
+
+        signinPanel.add(signupButton);
+        signinPanel.add(loginButton);
+        signinPanel.add(userId);
+        signinPanel.add(password);
+
+        frame.add(signinPanel);
+        frame.pack();
+        frame.setVisible(true);
+        authLogin();
+        signupButton.addActionListener(e->
+            signUp()
+        );
+
+    }
+    public void signUp(){
+        ImageIcon signUpIcon = new ImageIcon(getClass().getClassLoader().getResource("button/signUpBtn.png"));
+        ImageIcon backIcon = new ImageIcon(getClass().getClassLoader().getResource("button/backBtn.png"));
+        ImageIcon signUpIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/signUpBtn_hover.png"));
+        ImageIcon backIconHover = new ImageIcon(getClass().getClassLoader().getResource("button/hover/backBtn_hover.png"));
+        loginBackground = SpriteStore.get().getSprite("loginBackground.png");
+
+        signupPanel = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                loginBackground.draw(g, 0, 0);
+            }
+        };
+        signupPanel.setPreferredSize(new Dimension(800,600));
+        signupPanel.setLayout(null);
+
+        JButton signUpBtn = new JButton(signUpIcon);
+        signUpBtn.setBounds(300,377,200,50);
+        signUpBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        signUpBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        signUpBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        signUpBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                signUpBtn.setIcon(signUpIconHover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                signUpBtn.setIcon(signUpIcon);
+            }
+        });
+        JButton backBtn = new JButton(backIcon);
+        backBtn.setBounds(300,444,200,50);
+        backBtn.setBorderPainted(false);       // 버튼 테두리 설정 해제
+        backBtn.setFocusPainted(false);        // 포커스가 갔을 때 생기는 테두리 설정 해제
+        backBtn.setContentAreaFilled(false);   // 버튼 영역 배경 표시 해제
+        backBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                // 아이콘을 hover 이미지로 변경
+                backBtn.setIcon(backIconHover);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                // 아이콘을 기본 이미지로 복원
+                backBtn.setIcon(backIcon);
+            }
+        });
+
+        JTextField username = new JTextField(10);
+        username.setBounds(300,222,200,50);
+        username.setOpaque(false); // 1. 배경을 투명하게 설정
+        username.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리를 투명하고 안쪽 여백을 줌
+        username.setForeground(Color.BLACK); // 3. 글자 색 변경
+        username.setFont(INPUT_FONT); // 4. 폰트 설정
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
+
+
+        JTextField myPassword = new JTextField(10);
+        myPassword.setBounds(300,302,200,50);
+        myPassword.setOpaque(false); // 1. 배경을 투명하게 설정
+        myPassword.setBorder(new EmptyBorder(0, 5, 0, 5)); // 2. 테두리 제거
+        myPassword.setForeground(Color.BLACK); // 3. 글자 색 변경
+        myPassword.setFont(INPUT_FONT); // 4. 폰트 설정
+        userId.setHorizontalAlignment(SwingConstants.LEFT); // 5. 텍스트 가운데 정렬
+
+
+        signupPanel.add(signUpBtn);
+        signupPanel.add(backBtn);
+        signupPanel.add(username);
+        signupPanel.add(myPassword);
+
+        frame.setContentPane(signupPanel);
+        frame.revalidate();
+        frame.repaint();
+
+        signUpBtn.addActionListener(e->
+            game.performLoginOrSignUp(new SignUpRequest(username.getText(), myPassword.getText()))
+        );
+        backBtn.addActionListener(e->
+            frame.setContentPane(this.signinPanel)
+        );
+    }
+
+    public void authLogin(){
+        loginButton.addActionListener(e ->
+
+            game.performLoginOrSignUp(new LoginRequest(userId.getText(), new String(password.getPassword())))
+        );
+    }
+}
+
+
