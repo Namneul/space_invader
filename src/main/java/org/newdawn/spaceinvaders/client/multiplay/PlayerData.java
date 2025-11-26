@@ -1,5 +1,3 @@
-package org.newdawn.spaceinvaders.multiplay;
-
 package org.newdawn.spaceinvaders.client.multiplay;
 
 public class PlayerData {
