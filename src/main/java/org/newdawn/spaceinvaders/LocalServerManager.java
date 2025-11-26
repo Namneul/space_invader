@@ -27,10 +27,10 @@ public class LocalServerManager {
         ProcessBuilder pb;
         if ("single".equals(serverType)) {
             pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath,
-                    "org.newdawn.spaceinvaders.multiplay.Server", String.valueOf(port), "single");
+                    "org.newdawn.spaceinvaders.client.multiplay.Server", String.valueOf(port), "single");
         } else {
             pb = new ProcessBuilder("java", "-Dfile.encoding=UTF-8", "-cp", classpath,
-                    "org.newdawn.spaceinvaders.multiplay.Server", String.valueOf(port));
+                    "org.newdawn.spaceinvaders.client.multiplay.Server", String.valueOf(port));
         }
 
         pb.redirectErrorStream(true);
